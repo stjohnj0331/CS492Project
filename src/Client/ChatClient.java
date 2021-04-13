@@ -1,46 +1,62 @@
-package Client;
-import java.net.*;
+package Server;
+
 import java.io.*;
-import java.security.*;
+import java.net.*;
+import java.util.*;
+
+public class ChatServer {
 
 
-public class ChatClient {
-
-    //for testing only
-    private static String username = "user1";
-    private static String password = "1234";
-    //---------------------------------
-
+    /**
+     * Server currently just listens on the specified port, prints that a new client has connected
+     * prints a message from the client, and sends the server time to the client
+     * @param args
+     */
     public static void main(String[] args) {
-        
-        //server info
-        String hostname = "24.62.3.181";
+        //Desired port for server to listen on
         int port = 443;
-        //end server info
+        //------------------------------------
 
-        try (Socket socket = new Socket(hostname, port)) {
+        try (ServerSocket serverSocket = new ServerSocket(port)) {
 
-            InputStream input = socket.getInputStream();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+            System.out.println("Server is listening on port " + port);
 
-            OutputStream output = socket.getOutputStream();
-            PrintWriter writer = new PrintWriter(output, true);
-            
-            //access token: password hash in the future
-            writer.println(password);
+            while (true) {
+                Socket socket = serverSocket.accept();
+                InputStream input = socket.getInputStream();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+                
+                String clientData = reader.readLine();
+                System.out.println(clientData);
+                
+                if(comparator(clientData, "12"))
+                    System.out.println("New client connected");
 
-            String time = reader.readLine();
+                OutputStream output = socket.getOutputStream();
+                PrintWriter writer = new PrintWriter(output, true);
 
-            System.out.println(time);
+                writer.println(new Date().toString());
 
-
-        } catch (UnknownHostException ex) {
-
-            System.out.println("Server not found: " + ex.getMessage());
+            }
 
         } catch (IOException ex) {
-
-            System.out.println("I/O error: " + ex.getMessage());
+            System.out.println("Server exception: " + ex.getMessage());
+            ex.printStackTrace();
         }
+    }
+
+    public boolean validLogin(String hashPassword) throws IOException{
+        File login = new File("login.txt");
+        Scanner reader = new Scanner(login);
+        String line;
+        while(reader.hasNextLine()){
+            if(comparator(hashPassword, line) == true)
+                return true;
+        }
+        return false;
+    }
+
+    public static boolean comparator(String s1, String s2){
+        return s1.equals(s2);
     }
 }

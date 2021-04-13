@@ -1,62 +1,44 @@
-package Server;
-
-import java.io.*;
+package Client;
 import java.net.*;
-import java.util.*;
-
-public class ChatServer {
+import java.io.*;
 
 
-    /**
-     * Server currently just listens on the specified port, prints that a new client has connected
-     * prints a message from the client, and sends the server time to the client
-     * @param args
-     */
+public class ChatClient {
+
+    //for testing only
+    private String username = "user1";
+    private String password = "1234";
+    //---------------------------------
+
     public static void main(String[] args) {
-        //Desired port for server to listen on
+        
+        //server info
+        String hostname = "24.62.3.181";
         int port = 443;
-        //------------------------------------
+        //end server info
 
-        try (ServerSocket serverSocket = new ServerSocket(port)) {
+        try (Socket socket = new Socket(hostname, port)) {
 
-            System.out.println("Server is listening on port " + port);
+            InputStream input = socket.getInputStream();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(input));
 
-            while (true) {
-                Socket socket = serverSocket.accept();
-                InputStream input = socket.getInputStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-                
-                String clientData = reader.readLine();
-                System.out.println(clientData);
-                
-                if(comparator(clientData, "12"))
-                    System.out.println("New client connected");
+            OutputStream output = socket.getOutputStream();
+            PrintWriter writer = new PrintWriter(output, true);
 
-                OutputStream output = socket.getOutputStream();
-                PrintWriter writer = new PrintWriter(output, true);
+            writer.println("test");
 
-                writer.println(new Date().toString());
+            String time = reader.readLine();
 
-            }
+            System.out.println(time);
+
+
+        } catch (UnknownHostException ex) {
+
+            System.out.println("Server not found: " + ex.getMessage());
 
         } catch (IOException ex) {
-            System.out.println("Server exception: " + ex.getMessage());
-            ex.printStackTrace();
-        }
-    }
 
-    public boolean validLogin(String hashPassword) throws IOException{
-        File login = new File("login.txt");
-        Scanner reader = new Scanner(login);
-        String line;
-        while(reader.hasNextLine()){
-            if(comparator(hashPassword, line) == true)
-                return true;
+            System.out.println("I/O error: " + ex.getMessage());
         }
-        return false;
-    }
-
-    public static boolean comparator(String s1, String s2){
-        return s1.equals(s2);
     }
 }

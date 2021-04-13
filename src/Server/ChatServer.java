@@ -2,7 +2,7 @@ package Server;
 
 import java.io.*;
 import java.net.*;
-import java.util.Date;
+import java.util.*;
 
 public class ChatServer {
 
@@ -29,7 +29,7 @@ public class ChatServer {
                 String clientData = reader.readLine();
                 System.out.println(clientData);
                 
-                if(clientData == 12)
+                if(comparator(clientData, "12"))
                     System.out.println("New client connected");
 
                 OutputStream output = socket.getOutputStream();
@@ -45,20 +45,18 @@ public class ChatServer {
         }
     }
 
-    public boolean validLogin(int hashPassword){
+    public boolean validLogin(String hashPassword) throws IOException{
         File login = new File("login.txt");
-        FileReader reader = new FileReader(file);
+        Scanner reader = new Scanner(login);
         String line;
-        boolean result = false;
-        while(line = reader.readLine() != NULL){
+        while(reader.hasNextLine()){
             if(comparator(hashPassword, line) == true)
-                result = true;
+                return true;
         }
-        reader.close();
-        return result;
+        return false;
     }
 
-    public boolean comparator(String 1, String 2){
-        return 1.equals(2);
+    public static boolean comparator(String s1, String s2){
+        return s1.equals(s2);
     }
 }

@@ -1,13 +1,14 @@
 package Client;
 import java.net.*;
 import java.io.*;
+import java.security.*;
 
 
 public class ChatClient {
 
     //for testing only
-    private String username = "user1";
-    private String password = "1234";
+    private static String username = "user1";
+    private static String password = "1234";
     //---------------------------------
 
     public static void main(String[] args) {
@@ -24,8 +25,9 @@ public class ChatClient {
 
             OutputStream output = socket.getOutputStream();
             PrintWriter writer = new PrintWriter(output, true);
-
-            writer.println("test");
+            
+            //access token: password hash in the future
+            writer.println(password);
 
             String time = reader.readLine();
 

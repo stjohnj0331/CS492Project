@@ -1,6 +1,5 @@
 package Server;
 
-import Connect.Connection;
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -11,16 +10,17 @@ public class ChatServer {
     ServerSocket serverSocket;
     Socket client;
     int bytesRead;
-    Connection c = new Connection();
     BufferedReader input;
     PrintWriter output;
-    File logs = new File("logs.txt");
+    File logsPath = new File("src/Server/logs.txt");
+    PrintWriter logs;
+    private int port = 4135;
 
 
     public void start()throws IOException{
-        System.out.println("Connection starting on port "+c.getPORT());
-
-        serverSocket =  new ServerSocket(c.getPORT());
+        System.out.println("Connection starting on port "+port);
+        logs = new PrintWriter(logsPath);
+        serverSocket =  new ServerSocket(port);
 
         client = serverSocket.accept();
 
@@ -28,9 +28,9 @@ public class ChatServer {
             boolean loginAttempt = loginInfo();
             if(loginAttempt){
                 /*
-                this is where I will either start a thread to connect the two clients or wait for the other client
-                to connect and exchange ip and port info to allow for clients to create connection.
+                client handoff
                  */
+                System.out.println("login successful");
             }else{
                 client.close();
             }
@@ -41,12 +41,11 @@ public class ChatServer {
 
     public boolean loginInfo()throws Exception{
         input = new BufferedReader(new InputStreamReader(client.getInputStream()));
-
-        String username = input.readLine();
-        String password = input.readLine();
-
         output = new PrintWriter(new OutputStreamWriter(client.getOutputStream()));
-        int hashedLogin = Encryption.SecurityUtilities.hash("username"+"password");
+
+        String inputStream = input.readLine();
+        //expecting hashed username and password from client to check against the login file
+        int hashedLogin = Integer.parseInt(inputStream);
 
         if(validateLogin(hashedLogin))
             return true;
@@ -54,24 +53,8 @@ public class ChatServer {
     }
 
 
-    /**
-     * Server currently just listens on the specified port, prints that a new client has connected
-     * prints a message from the client, and sends the server time to the client
-     * @param args
-     */
-    public static void main(String[] args) {
-        ChatServer server = new ChatServer();
-        try{
-            while(true){
-                server.start();
-            }
-        }catch(Exception e){
-            e.printStackTrace();
-        }
-    }
-
     public boolean validateLogin(int hashedLogin) throws IOException{
-        File login = new File("login.txt");
+        File login = new File("/login.txt");
         Scanner reader = new Scanner(login);
         while(reader.hasNextLine()){
             String fileIn = reader.nextLine();
@@ -83,4 +66,17 @@ public class ChatServer {
         return false;
     }
 
+
+    public static void main(String[] args){
+        ChatServer server = new ChatServer();
+        try{
+            while(true){
+                server.start();
+            }
+
+        }catch(Exception e){
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
 }

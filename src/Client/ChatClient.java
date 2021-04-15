@@ -14,7 +14,7 @@ public class ChatClient {
         
         //server info
         String hostname = "24.62.3.181";
-        int port = 443;
+        int port = 4215;
         //end server info
 
         try (Socket socket = new Socket(hostname, port)) {

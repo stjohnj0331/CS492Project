@@ -1,10 +1,57 @@
 package Server;
 
+import Connect.Connection;
 import java.io.*;
 import java.net.*;
 import java.util.*;
 
 public class ChatServer {
+
+    private int currentTot;
+    ServerSocket serverSocket;
+    Socket client;
+    int bytesRead;
+    Connection c = new Connection();
+    BufferedReader input;
+    PrintWriter output;
+    File logs = new File("logs.txt");
+
+
+    public void start()throws IOException{
+        System.out.println("Connection starting on port "+c.getPORT());
+
+        serverSocket =  new ServerSocket(c.getPORT());
+
+        client = serverSocket.accept();
+
+        try{
+            boolean loginAttempt = loginInfo();
+            if(loginAttempt){
+                /*
+                this is where I will either start a thread to connect the two clients or wait for the other client
+                to connect and exchange ip and port info to allow for clients to create connection.
+                 */
+            }else{
+                client.close();
+            }
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    public boolean loginInfo()throws Exception{
+        input = new BufferedReader(new InputStreamReader(client.getInputStream()));
+
+        String username = input.readLine();
+        String password = input.readLine();
+
+        output = new PrintWriter(new OutputStreamWriter(client.getOutputStream()));
+        int hashedLogin = Encryption.SecurityUtilities.hash("username"+"password");
+
+        if(validateLogin(hashedLogin))
+            return true;
+        return false;
+    }
 
 
     /**
@@ -13,50 +60,27 @@ public class ChatServer {
      * @param args
      */
     public static void main(String[] args) {
-        //Desired port for server to listen on
-        int port = 443;
-        //------------------------------------
-
-        try (ServerSocket serverSocket = new ServerSocket(port)) {
-
-            System.out.println("Server is listening on port " + port);
-
-            while (true) {
-                Socket socket = serverSocket.accept();
-                InputStream input = socket.getInputStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-                
-                String clientData = reader.readLine();
-                System.out.println(clientData);
-                
-                if(comparator(clientData, "12"))
-                    System.out.println("New client connected");
-
-                OutputStream output = socket.getOutputStream();
-                PrintWriter writer = new PrintWriter(output, true);
-
-                writer.println(new Date().toString());
-
+        ChatServer server = new ChatServer();
+        try{
+            while(true){
+                server.start();
             }
-
-        } catch (IOException ex) {
-            System.out.println("Server exception: " + ex.getMessage());
-            ex.printStackTrace();
+        }catch(Exception e){
+            e.printStackTrace();
         }
     }
 
-    public boolean validLogin(String hashPassword) throws IOException{
+    public boolean validateLogin(int hashedLogin) throws IOException{
         File login = new File("login.txt");
         Scanner reader = new Scanner(login);
-        String line;
         while(reader.hasNextLine()){
-            if(comparator(hashPassword, line) == true)
+            String fileIn = reader.nextLine();
+            int loginOnFile = Integer.parseInt(fileIn);
+            if(loginOnFile == hashedLogin){
                 return true;
+            }
         }
         return false;
     }
 
-    public static boolean comparator(String s1, String s2){
-        return s1.equals(s2);
-    }
 }

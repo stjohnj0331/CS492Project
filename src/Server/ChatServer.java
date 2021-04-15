@@ -54,7 +54,7 @@ public class ChatServer {
 
 
     public boolean validateLogin(int hashedLogin) throws IOException{
-        File login = new File("/login.txt");
+        File login = new File("src/Server/login.txt");
         Scanner reader = new Scanner(login);
         while(reader.hasNextLine()){
             String fileIn = reader.nextLine();

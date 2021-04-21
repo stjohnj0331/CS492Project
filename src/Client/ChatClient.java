@@ -13,8 +13,8 @@ public class ChatClient {
     public static void main(String[] args) {
         
         //server info
-        String hostname = "24.62.3.181";
-        int port = 4215;
+        String hostname = "192.168.1.10";
+        int port = 4135;
         //end server info
 
         try (Socket socket = new Socket(hostname, port)) {
@@ -25,12 +25,12 @@ public class ChatClient {
             OutputStream output = socket.getOutputStream();
             PrintWriter writer = new PrintWriter(output, true);
 
-            writer.println("test");
+            writer.println("587104809");
 
             String time = reader.readLine();
 
             System.out.println(time);
-
+            writer.close();
 
         } catch (UnknownHostException ex) {
 

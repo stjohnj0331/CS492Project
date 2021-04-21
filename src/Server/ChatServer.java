@@ -3,49 +3,68 @@ package Server;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.time.LocalTime;
 
 public class ChatServer {
 
+    //server settings
     private int currentTot;
     ServerSocket serverSocket;
     Socket client;
     int bytesRead;
     BufferedReader input;
     PrintWriter output;
+    FileWriter logs;
     File logsPath = new File("src/Server/logs.txt");
-    PrintWriter logs;
-    private int port = 4135;
-
-
+    private final int port = 4135;
+    LocalTime time = LocalTime.now();
+    //end server settings
+    /**
+     * logs will be removed for final implementation
+     * they are temporary.
+     * @throws IOException
+     */
     public void start()throws IOException{
-        System.out.println("Connection starting on port "+port);
-        logs = new PrintWriter(logsPath);
+        System.out.println("Server Listening on port "+port);
+        logs = new FileWriter(logsPath,true);
         serverSocket =  new ServerSocket(port);
+        while(true) {
 
-        client = serverSocket.accept();
+            client = serverSocket.accept();
 
-        try{
-            boolean loginAttempt = loginInfo();
-            if(loginAttempt){
+            try {
+
+                output = new PrintWriter(new OutputStreamWriter(client.getOutputStream()));
+                boolean loginAttempt = loginInfo();
+                String address = client.getInetAddress().toString();
+
+                if (loginAttempt) {
+                    System.out.println(address + " logged in @ " + time.toString());
+                    output.println(" login attempt successful");
+                    logs.write("\n"+address + " logged in @ " + time.toString());
                 /*
                 client handoff
                  */
-                System.out.println("login successful");
-            }else{
-                client.close();
+                } else {
+                    System.out.println(address + " attempted to log in @ " + time.toString());
+                    output.println(" login attempt failed");
+                    logs.write("\n"+address + " attempted to log in @ " + time.toString());
+                    client.close();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                //client.close();
             }
-        }catch(Exception e){
-            e.printStackTrace();
+            logs.flush();
         }
     }
 
     public boolean loginInfo()throws Exception{
         input = new BufferedReader(new InputStreamReader(client.getInputStream()));
-        output = new PrintWriter(new OutputStreamWriter(client.getOutputStream()));
 
         String inputStream = input.readLine();
         //expecting hashed username and password from client to check against the login file
-        int hashedLogin = Integer.parseInt(inputStream);
+        long hashedLogin = Long.parseLong(inputStream);
 
         if(validateLogin(hashedLogin))
             return true;
@@ -53,27 +72,27 @@ public class ChatServer {
     }
 
 
-    public boolean validateLogin(int hashedLogin) throws IOException{
+    public boolean validateLogin(Long hashedLogin) throws IOException{
         File login = new File("src/Server/login.txt");
         Scanner reader = new Scanner(login);
+        boolean state = false;
         while(reader.hasNextLine()){
             String fileIn = reader.nextLine();
-            int loginOnFile = Integer.parseInt(fileIn);
-            if(loginOnFile == hashedLogin){
-                return true;
+            Long loginOnFile = Long.parseLong(fileIn);
+            System.out.println("PW on file: "+loginOnFile+"\nInc PW: "+hashedLogin);
+            if(loginOnFile.equals(hashedLogin)){
+                state = true;
             }
         }
-        return false;
+        System.out.println(state);
+        return state;
     }
 
 
     public static void main(String[] args){
         ChatServer server = new ChatServer();
         try{
-            while(true){
-                server.start();
-            }
-
+            server.start();
         }catch(Exception e){
             e.printStackTrace();
             System.exit(1);

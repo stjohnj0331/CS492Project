@@ -8,16 +8,17 @@ import java.time.LocalTime;
 public class ChatServer {
 
     //server settings
-    private int currentTot;
     ServerSocket serverSocket;
     Socket client;
-    int bytesRead;
     BufferedReader input;
     PrintWriter output;
     FileWriter logs;
     File logsPath = new File("src/Server/logs.txt");
     private final int port = 4135;
     LocalTime time = LocalTime.now();
+    List<String> loggedIn = new ArrayList<>();
+
+
     //end server settings
     /**
      * logs will be removed for final implementation
@@ -36,7 +37,6 @@ public class ChatServer {
             String address = client.getInetAddress().toString();
 
             try {
-
                 boolean loginAttempt = loginInfo();
                 output = new PrintWriter(new OutputStreamWriter(client.getOutputStream()));
 
@@ -44,9 +44,17 @@ public class ChatServer {
                     System.out.println(address + " logged in @ " + time.toString());
                     outputWriter.println(" Welcome to SecureChat");
                     logs.write("\n"+address + " logged in @ " + time.toString());
-                /*
-                client handoff
-                 */
+                    /*
+                    client handoff
+                    */
+                    String inputLine;
+                    while((inputLine = input.readLine()) != null){
+                        if(inputLine.equals("end")){
+                            System.out.println("client "+client.getInetAddress()+" has logged out");
+                            break;
+                        }
+                        System.out.println(inputLine);
+                    }
                 } else {
                     System.out.println(address + " attempted to log in @ " + time.toString());
                     outputWriter.println(" login attempt failed");
@@ -67,11 +75,17 @@ public class ChatServer {
 
     public boolean loginInfo()throws Exception{
         input = new BufferedReader(new InputStreamReader(client.getInputStream()));
-
-        String inputStream = input.readLine();
         //expecting hashed username and password from client to check against the login file
+        String username = input.readLine();
+        for(int i = 0; i < 2; i++){
+            if(loggedIn.contains(username)) {
+                output.println("user already logged in");
+                return false;
+            }
+        }
+        loggedIn.add(username);
+        String inputStream = input.readLine();
         long hashedLogin = Long.parseLong(inputStream);
-
         if(validateLogin(hashedLogin))
             return true;
         return false;
@@ -83,6 +97,7 @@ public class ChatServer {
         Scanner reader = new Scanner(login);
         boolean state = false;
         while(reader.hasNextLine()){
+            reader.nextLine();
             String fileIn = reader.nextLine();
             Long loginOnFile = Long.parseLong(fileIn);
             //System.out.println("PW on file: "+loginOnFile+"\nInc PW: "+hashedLogin);
@@ -90,7 +105,7 @@ public class ChatServer {
                 state = true;
             }
         }
-        //System.out.println(state);
+        System.out.println(state);
         return state;
     }
 

@@ -5,9 +5,6 @@ import java.io.*;
 
 public class ChatClient {
 
-    //for testing only
-    private String username = "user1";
-    private String password = "1234";
     //---------------------------------
 
     public static void main(String[] args) {
@@ -24,8 +21,9 @@ public class ChatClient {
 
             OutputStream output = socket.getOutputStream();
             PrintWriter writer = new PrintWriter(output, true);
-
+            writer.println("Thisisuser1");
             writer.println("587104809");
+            //writer.println("testing from client");
 
             String serverMessage = reader.readLine();
             //System.out.println(input.toString());

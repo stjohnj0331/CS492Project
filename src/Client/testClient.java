@@ -53,7 +53,7 @@ public class  testClient extends JFrame implements ActionListener {
         if ( evt.getSource() == btnExit ) {
             pw.println("end");  // send end to server so that server knows about the termination
             System.exit(0);
-        } else {
+        } if(evt.getSource() == btnSend){
             // send message to server
             pw.println(tfInput.getText());
         }
@@ -62,7 +62,7 @@ public class  testClient extends JFrame implements ActionListener {
     public static void main(String ... args) {
 
         // take username from user
-        String name = JOptionPane.showInputDialog(null,"Enter your login :", "Login",
+        String name = JOptionPane.showInputDialog(null,"Enter your username :", "Login",
                 JOptionPane.PLAIN_MESSAGE);
         String serverName = "192.168.1.10";
         try {
@@ -82,7 +82,7 @@ public class  testClient extends JFrame implements ActionListener {
                     line = br.readLine();
                     taMessages.append(line + "\n");
                 } // end of while
-            } catch(Exception ex) {}
+            } catch(Exception ex) {ex.getMessage();}
         }
     }
 } //  end of client

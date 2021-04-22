@@ -27,9 +27,10 @@ public class ChatClient {
 
             writer.println("587104809");
 
-            String time = reader.readLine();
+            String serverMessage = reader.readLine();
+            //System.out.println(input.toString());
 
-            System.out.println(time);
+            System.out.println(serverMessage);
             writer.close();
 
         } catch (UnknownHostException ex) {

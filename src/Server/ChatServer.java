@@ -31,30 +31,36 @@ public class ChatServer {
         while(true) {
 
             client = serverSocket.accept();
+            output = new PrintWriter(new OutputStreamWriter(client.getOutputStream()));
+            PrintWriter outputWriter = new PrintWriter(output, true);
+            String address = client.getInetAddress().toString();
 
             try {
 
-                output = new PrintWriter(new OutputStreamWriter(client.getOutputStream()));
                 boolean loginAttempt = loginInfo();
-                String address = client.getInetAddress().toString();
+                output = new PrintWriter(new OutputStreamWriter(client.getOutputStream()));
 
                 if (loginAttempt) {
                     System.out.println(address + " logged in @ " + time.toString());
-                    output.println(" login attempt successful");
+                    outputWriter.println(" Welcome to SecureChat");
                     logs.write("\n"+address + " logged in @ " + time.toString());
                 /*
                 client handoff
                  */
                 } else {
                     System.out.println(address + " attempted to log in @ " + time.toString());
-                    output.println(" login attempt failed");
+                    outputWriter.println(" login attempt failed");
                     logs.write("\n"+address + " attempted to log in @ " + time.toString());
                     client.close();
                 }
             } catch (Exception e) {
-                e.printStackTrace();
-                //client.close();
+                //e.printStackTrace();
+                System.out.println(address + " attempted to log in @ " + time.toString());
+                outputWriter.println(" login attempt failed");
+                logs.write("\n"+address + " attempted to log in @ " + time.toString());
+                client.close();
             }
+            output.flush();
             logs.flush();
         }
     }
@@ -79,12 +85,12 @@ public class ChatServer {
         while(reader.hasNextLine()){
             String fileIn = reader.nextLine();
             Long loginOnFile = Long.parseLong(fileIn);
-            System.out.println("PW on file: "+loginOnFile+"\nInc PW: "+hashedLogin);
+            //System.out.println("PW on file: "+loginOnFile+"\nInc PW: "+hashedLogin);
             if(loginOnFile.equals(hashedLogin)){
                 state = true;
             }
         }
-        System.out.println(state);
+        //System.out.println(state);
         return state;
     }
 

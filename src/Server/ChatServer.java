@@ -8,7 +8,7 @@ import java.time.LocalTime;
 public class ChatServer {
 
     //server settings
-    ServerSocket serverSocket;
+    private ServerSocket serverSocket;
     Socket client;
     BufferedReader input;
     PrintWriter output;
@@ -17,8 +17,6 @@ public class ChatServer {
     private final int port = 4135;
     LocalTime time = LocalTime.now();
     List<String> loggedIn = new ArrayList<>();
-
-
     //end server settings
     /**
      * logs will be removed for final implementation
@@ -86,26 +84,28 @@ public class ChatServer {
         loggedIn.add(username);
         String inputStream = input.readLine();
         long hashedLogin = Long.parseLong(inputStream);
-        if(validateLogin(hashedLogin))
+        if(validateLogin(hashedLogin, username))
             return true;
         return false;
     }
 
 
-    public boolean validateLogin(Long hashedLogin) throws IOException{
+    public boolean validateLogin(Long hashedLogin, String username) throws IOException{
         File login = new File("src/Server/login.txt");
         Scanner reader = new Scanner(login);
         boolean state = false;
         while(reader.hasNextLine()){
-            reader.nextLine();
-            String fileIn = reader.nextLine();
-            Long loginOnFile = Long.parseLong(fileIn);
-            //System.out.println("PW on file: "+loginOnFile+"\nInc PW: "+hashedLogin);
-            if(loginOnFile.equals(hashedLogin)){
-                state = true;
+            String nextLine = reader.nextLine();
+            if(nextLine.equals(username)) {
+                nextLine = reader.nextLine();
+                Long loginOnFile = Long.parseLong(nextLine);
+                if (loginOnFile.equals(hashedLogin)) {
+                    state = true;
+                }
+            }else{
+                reader.nextLine();
             }
         }
-        System.out.println(state);
         return state;
     }
 

@@ -15,13 +15,14 @@ public class  testClient extends JFrame implements ActionListener {
     JButton btnSend,btnExit;
     Socket client;
 
-    public testClient(String uname,String serverName) throws Exception {
+    public testClient(String uname, String password, String serverName) throws Exception {
         super(uname);  // set title for frame
         this.uname = uname;
         client  = new Socket(serverName,4135);
         br = new BufferedReader( new InputStreamReader( client.getInputStream()) ) ;
         pw = new PrintWriter(client.getOutputStream(),true);
         pw.println(uname);  // send name to server
+        pw.println(password);
         buildInterface();
         new MessagesThread().start();  // create thread to listen for messages
     }
@@ -64,9 +65,11 @@ public class  testClient extends JFrame implements ActionListener {
         // take username from user
         String name = JOptionPane.showInputDialog(null,"Enter your username :", "Login",
                 JOptionPane.PLAIN_MESSAGE);
+        String password = JOptionPane.showInputDialog(null,"Enter your password :", "Password",
+                JOptionPane.PLAIN_MESSAGE);
         String serverName = "192.168.1.10";
         try {
-            new testClient( name ,serverName);
+            new testClient( name, password, serverName);
         } catch(Exception ex) {
             out.println( "Error --> " + ex.getMessage());
         }

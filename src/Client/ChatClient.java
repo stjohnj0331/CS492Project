@@ -29,7 +29,10 @@ public class ChatClient {
             //System.out.println(input.toString());
 
             System.out.println(serverMessage);
+
+            writer.println("end");
             writer.close();
+            System.exit(1);
 
         } catch (UnknownHostException ex) {
 

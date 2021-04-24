@@ -22,7 +22,7 @@ public class ChatClient {
             OutputStream output = socket.getOutputStream();
             PrintWriter writer = new PrintWriter(output, true);
             writer.println("Thisisuser1");
-            writer.println("587104809");
+            writer.println("-559118235");
             //writer.println("testing from client");
 
             String serverMessage = reader.readLine();

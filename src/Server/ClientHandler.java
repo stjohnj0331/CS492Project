@@ -56,9 +56,9 @@ class ClientHandler extends Thread {
                     need to establish symmetric key
                     need to get and temp store g^ab mod p
                     */
-
+                    //System.out.println("mutual authentication phase");
                     mutualAuth();
-
+                    //System.out.println("entering message phase");
                     //Logout
                     String inputLine;
                     while((inputLine = input.readLine()) != null){
@@ -103,6 +103,7 @@ class ClientHandler extends Thread {
         }
     }
     public boolean login()throws Exception{
+        //System.out.println("entering login phase");
         input = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
         //expecting hashed username and password from client to check against the login file
         client.setUsername(input.readLine());
@@ -122,6 +123,7 @@ class ClientHandler extends Thread {
 
 
     public boolean loggedIn(Long hashedLogin, String username) throws IOException{
+        //System.out.println("entering logged in  phase");
         File login = new File("src/Server/login.txt");
         Scanner reader = new Scanner(login);
         boolean state = false;
@@ -154,8 +156,7 @@ class ClientHandler extends Thread {
      * @throws IOException
      */
     public void mutualAuth() throws IOException {
-
-        input = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+        //input = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
         String temp = input.readLine();
         client.nonce = Long.parseLong(temp);
         temp = input.readLine();

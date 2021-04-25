@@ -18,11 +18,20 @@ public class  testClient extends JFrame implements ActionListener {
     public testClient(String uname, String password, String serverName) throws Exception {
         super(uname);  // set title for frame
         this.uname = uname;
-        client  = new Socket(serverName,4135);
+        client  = new Socket(serverName,3000);
         br = new BufferedReader( new InputStreamReader( client.getInputStream()) ) ;
         pw = new PrintWriter(client.getOutputStream(),true);
+
+        //-----------------sending mutual authentication info---------------------------//
+        /*
+        username and password will change to a hashed value
+         */
         pw.println(uname);  // send name to server
         pw.println(password);
+        pw.println("1324");//nonce
+        pw.println("5678");//diffHell
+        //-----------------sending mutual authentication info END-----------------------//
+
         buildInterface();
         new MessagesThread().start();  // create thread to listen for messages
     }
@@ -77,7 +86,7 @@ public class  testClient extends JFrame implements ActionListener {
                 JOptionPane.PLAIN_MESSAGE);
         String password = JOptionPane.showInputDialog(null,"Enter your password :", "Password",
                 JOptionPane.PLAIN_MESSAGE);
-        String serverName = "127.0.0.1";
+        String serverName = "73.253.7.146";
         try {
             new testClient( name, password, serverName);
         } catch(Exception ex) {

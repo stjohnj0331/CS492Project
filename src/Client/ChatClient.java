@@ -10,8 +10,8 @@ public class ChatClient {
     public static void main(String[] args) {
         
         //server info
-        String hostname = "192.168.1.10";
-        int port = 4135;
+        String hostname = "73.253.7.146";
+        int port = 3000;
         //end server info
 
         try (Socket socket = new Socket(hostname, port)) {
@@ -39,7 +39,7 @@ public class ChatClient {
             System.out.println("Server not found: " + ex.getMessage());
 
         } catch (IOException ex) {
-
+            ex.printStackTrace();
             System.out.println("I/O error: " + ex.getMessage());
         }
     }

@@ -40,7 +40,7 @@ public class ChatServer {
 
                 if (loginAttempt) {
                     System.out.println(address + " logged in @ " + time.toString());
-                    outputWriter.println(" Welcome to SecureChat");
+                    outputWriter.println("Welcome to SecureChat");
                     logs.write("\n"+address + " logged in @ " + time.toString());
                     /*
                     client handoff
@@ -52,6 +52,7 @@ public class ChatServer {
                             break;
                         }
                         System.out.println(inputLine);
+                        outputWriter.println("[" + loggedIn.get(0).toString() + "]:" + inputLine);
                     }
                 } else {
                     System.out.println(address + " attempted to log in @ " + time.toString());

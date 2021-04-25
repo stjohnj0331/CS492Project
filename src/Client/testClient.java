@@ -35,6 +35,15 @@ public class  testClient extends JFrame implements ActionListener {
         taMessages.setColumns(50);
         taMessages.setEditable(false);
         tfInput  = new JTextField(50);
+        tfInput.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    pw.println(tfInput.getText());
+                    tfInput.setText("");
+                }
+            }
+        });
         JScrollPane sp = new JScrollPane(taMessages, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
                 JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         add(sp,"Center");
@@ -57,6 +66,7 @@ public class  testClient extends JFrame implements ActionListener {
         } if(evt.getSource() == btnSend){
             // send message to server
             pw.println(tfInput.getText());
+            tfInput.setText("");
         }
     }
 
@@ -67,7 +77,7 @@ public class  testClient extends JFrame implements ActionListener {
                 JOptionPane.PLAIN_MESSAGE);
         String password = JOptionPane.showInputDialog(null,"Enter your password :", "Password",
                 JOptionPane.PLAIN_MESSAGE);
-        String serverName = "192.168.1.10";
+        String serverName = "127.0.0.1";
         try {
             new testClient( name, password, serverName);
         } catch(Exception ex) {

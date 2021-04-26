@@ -1,18 +1,18 @@
 package Server;
 
 import java.io.*;
+import java.net.MulticastSocket;
 import java.net.Socket;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-class ClientHandler extends Thread {
+class ClientHandler extends Thread {//essentially a thread
     private PrintWriter output;
     private BufferedReader input;
     FileWriter logs;
     File logsPath = new File("src/Server/logs.txt");
-    static List<Client> loggedIn = new ArrayList<>();
     LocalDateTime time = LocalDateTime.now();
     Socket clientSocket;
     Client client;
@@ -20,8 +20,8 @@ class ClientHandler extends Thread {
     public ClientHandler(Socket socket) {
         this.clientSocket = socket;
         client = new Client();
+        start();
     }
-
     /**
      *  validates clients created by MultiClientServer by checking login info, number of clients connected
      *  and writes to both the server logs and server terminal logins/logouts and attempted logins.
@@ -29,46 +29,50 @@ class ClientHandler extends Thread {
      */
     @Override public void run() {
         try {
-            output = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
+            output = new PrintWriter(clientSocket.getOutputStream(), true);
             input = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             client.setIpAddress(clientSocket.getInetAddress().toString());
             logs = new FileWriter(logsPath,true);
             try {
                 boolean loginAttempt = login();
-                output = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
 
                 if (loginAttempt) {//verifying to the server, hashed username and password
                     //Login--------------------------------//
                     MultiClientServer.clientCount++;
-
-                    loggedIn.add(client);
-
+                    MultiClientServer.clients.add(client.getUsername());
+                    //to this client
                     output.println(" Welcome to SecureChat");
+                    //to the server terminal
                     System.out.println(client.getIpAddress() + " logged in @ " + time);
+                    //to the logs
                     logs.write("\n"+client.getIpAddress() + " logged in @ " + time);
                     flush();
 
-                    /*
-                    client connection
-                    need to get nonce
-                    need to establish symmetric key
-                    need to get and temp store g^ab mod p
-                    */
+
                     mutualAuth();
 
                     //end login----------------------------//
 
-                    String inputLine;
-                    while((inputLine = input.readLine()) != null){
-                        if(inputLine.equals("end")){
-                            MultiClientServer.clientCount--;
-                            System.out.println(client.getIpAddress()+" logged out @ "+time);
-                            logs.write("\n"+client.getIpAddress() + " logged out @ " + time);
+                    /*
+                    client connection
+                    need to establish send and receive message threads
+                    */
+                    try {
+                        String inputLine;
+                        while ((inputLine = input.readLine()) != null) {
+                            if (inputLine.equals("end")) {
+                                MultiClientServer.clientCount--;
+                                System.out.println(client.getIpAddress() + " logged out @ " + time);
+                                logs.write("\n" + client.getIpAddress() + " logged out @ " + time);
+                                flush();
+                                break;
+                            }
+                            MultiClientServer.broadcast(client.getUsername(), inputLine);
+                            sendMessage("Me: ",inputLine);
                             flush();
-                            break;
                         }
-                        System.out.println(inputLine);
-                        output.flush();
+                    }catch(Exception e){
+                            e.getMessage();
                     }
                     //end logout
                 } else {//for failed login
@@ -90,15 +94,17 @@ class ClientHandler extends Thread {
             e.getMessage();
         }
     }
+
+    public void sendMessage(String uname,String  msg)  {
+        output.println( uname + ": " + msg);
+    }
     public boolean login()throws Exception{
         client.setUsername(input.readLine());
-        for(int i = 0; i < 2; i++){
-            if(loggedIn.contains(client.getUsername())) {
+        for(int i = 0; i < 2; i++)
+            if(MultiClientServer.clients.contains(client.getUsername())) {
                 output.println("user already logged in");
                 return false;
             }
-        }
-
         String inputStream = input.readLine();
         long hashedLogin = Long.parseLong(inputStream);
         if(checkCredentials(hashedLogin, client.getUsername()))
@@ -140,18 +146,17 @@ class ClientHandler extends Thread {
      */
     public void mutualAuth() throws IOException {
         String temp = input.readLine();
-        client.nonce = Long.parseLong(temp);
+        client.setNonce(Long.parseLong(temp));
         temp = input.readLine();
-        client.diffHell = Long.parseLong(temp);
-        PFS.Authentication.authenticate(client.username, client.nonce, client.diffHell);
+        client.setDiffHell(Long.parseLong(temp));
+        PFS.Authentication.authenticate(client.getUsername(), client.getNonce(), client.getDiffHell());
     }
-
 
     /* Utility functions that just serve to clean up my code*/
     public void flush(){
         try {
             logs.flush();
-            output.flush();
+            //output.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }

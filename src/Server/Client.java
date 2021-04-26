@@ -2,8 +2,8 @@ package Server;
 
 public class Client {
 
-    String username, ipAddress;
-    Long nonce, diffHell;
+    private String username, ipAddress;
+    private Long nonce, diffHell;
 
     public String getUsername() {
         return username;
@@ -32,4 +32,5 @@ public class Client {
     public void setDiffHell(Long diffHell) {this.diffHell = diffHell;}
 
     public void setIpAddress(String ipAddress) {this.ipAddress = ipAddress;}
+
 }

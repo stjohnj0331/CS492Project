@@ -77,7 +77,7 @@ class ClientHandler extends Thread {
                 }
                 /*
                    for exceptions caused by login attempts. I want to ensure the connection is dropped if a hack
-                   is attempted that causes any exceptions, sort of redundancy.
+                   is attempted that causes any exceptions, sort of a redundancy.
                 */
             } catch (Exception e) {
                 System.out.println("Error --> " + e.getMessage());
@@ -91,9 +91,6 @@ class ClientHandler extends Thread {
         }
     }
     public boolean login()throws Exception{
-        //System.out.println("entering login phase");
-        //input = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-        //expecting hashed username and password from client to check against the login file
         client.setUsername(input.readLine());
         for(int i = 0; i < 2; i++){
             if(loggedIn.contains(client.getUsername())) {
@@ -104,12 +101,12 @@ class ClientHandler extends Thread {
 
         String inputStream = input.readLine();
         long hashedLogin = Long.parseLong(inputStream);
-        if(loggedIn(hashedLogin, client.getUsername()))
+        if(checkCredentials(hashedLogin, client.getUsername()))
             return true;
         return false;
     }
 
-    public boolean loggedIn(Long hashedLogin, String username) throws IOException{
+    public boolean checkCredentials(Long hashedLogin, String username) throws IOException{
         //System.out.println("entering logged in  phase");
         File login = new File("src/Server/login.txt");
         Scanner reader = new Scanner(login);
@@ -142,7 +139,6 @@ class ClientHandler extends Thread {
      * @throws IOException
      */
     public void mutualAuth() throws IOException {
-        //input = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
         String temp = input.readLine();
         client.nonce = Long.parseLong(temp);
         temp = input.readLine();
@@ -150,6 +146,8 @@ class ClientHandler extends Thread {
         PFS.Authentication.authenticate(client.username, client.nonce, client.diffHell);
     }
 
+
+    /* Utility functions that just serve to clean up my code*/
     public void flush(){
         try {
             logs.flush();

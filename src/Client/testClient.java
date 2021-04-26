@@ -32,7 +32,7 @@ public class  testClient extends JFrame implements ActionListener {
          */
         pw.println(uname);  // send name to server
         pw.println(password);
-        pw.println(cybSecTools.getNonce());//nonce
+        pw.println(cybSecTools.CryptoSecureRand());//nonce
         pw.println("5678");//diffHell
         //-----------------sending mutual authentication info END-----------------------//
 

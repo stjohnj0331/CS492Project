@@ -1,3 +1,7 @@
 out/*
 
 .idea/*
+
+src/Server/logs.txt
+
+src/Server/login.txt

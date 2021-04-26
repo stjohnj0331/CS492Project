@@ -1,13 +1,9 @@
 package Server;
 
-import java.net.Socket;
-
 public class Client {
 
-    String username;
-    Long nonce;
-    Long diffHell;
-    String ipAddress;
+    String username, ipAddress;
+    Long nonce, diffHell;
 
     public String getUsername() {
         return username;
@@ -33,11 +29,7 @@ public class Client {
         this.nonce = nonce;
     }
 
-    public void setDiffHell(Long diffHell) {
-        this.diffHell = diffHell;
-    }
+    public void setDiffHell(Long diffHell) {this.diffHell = diffHell;}
 
-    public void setIpAddress(String ipAddress) {
-        this.ipAddress = ipAddress;
-    }
+    public void setIpAddress(String ipAddress) {this.ipAddress = ipAddress;}
 }

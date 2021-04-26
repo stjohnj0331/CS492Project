@@ -25,8 +25,7 @@ class ClientHandler extends Thread {
     /**
      *  validates clients created by MultiClientServer by checking login info, number of clients connected
      *  and writes to both the server logs and server terminal logins/logouts and attempted logins.
-     *  also handles mutual authentication and the creation of a connection between the 2 clients
-     *  facilitating end to end encryption, perfect forward security,
+     *  Gathers all of the data required for mutual authentication, perfect forward security,
      */
     @Override public void run() {
         try {
@@ -39,7 +38,7 @@ class ClientHandler extends Thread {
                 output = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
 
                 if (loginAttempt) {//verifying to the server, hashed username and password
-                    //Login
+                    //Login--------------------------------//
                     MultiClientServer.clientCount++;
 
                     loggedIn.add(client);
@@ -47,54 +46,43 @@ class ClientHandler extends Thread {
                     output.println(" Welcome to SecureChat");
                     System.out.println(client.getIpAddress() + " logged in @ " + time);
                     logs.write("\n"+client.getIpAddress() + " logged in @ " + time);
-                    output.flush();
-                    logs.flush();
-                    //end login
+                    flush();
+
                     /*
-                    client handoff
+                    client connection
                     need to get nonce
                     need to establish symmetric key
                     need to get and temp store g^ab mod p
                     */
-                    //System.out.println("mutual authentication phase");
                     mutualAuth();
-                    //System.out.println("entering message phase");
-                    //Logout
+
+                    //end login----------------------------//
+
                     String inputLine;
                     while((inputLine = input.readLine()) != null){
                         if(inputLine.equals("end")){
                             MultiClientServer.clientCount--;
                             System.out.println(client.getIpAddress()+" logged out @ "+time);
                             logs.write("\n"+client.getIpAddress() + " logged out @ " + time);
-                            logs.flush();
+                            flush();
                             break;
                         }
                         System.out.println(inputLine);
                         output.flush();
                     }
                     //end logout
-
                 } else {//for failed login
-                    System.out.println(client.getIpAddress() + " attempted login @ " + time);
-                    logs.write("\n"+client.getIpAddress() + " attempted login @ " + time);
                     output.println(" login attempt failed");
-                    clientSocket.close();
-                    output.flush();
-                    logs.flush();
+                    failed();
                 }
                 /*
                    for exceptions caused by login attempts. I want to ensure the connection is dropped if a hack
                    is attempted that causes any exceptions, sort of redundancy.
                 */
             } catch (Exception e) {
-                System.out.println("Error --> "+e.getMessage());
-                System.out.println(client.getIpAddress() + " attempted login @ " + time);
-                logs.write("\n"+client.getIpAddress() + " attempted login @ " + time);
-                clientSocket.close();
-                output.flush();
-                logs.flush();
+                System.out.println("Error --> " + e.getMessage());
+                failed();
             }
-
             input.close();
             output.close();
             clientSocket.close();
@@ -104,7 +92,7 @@ class ClientHandler extends Thread {
     }
     public boolean login()throws Exception{
         //System.out.println("entering login phase");
-        input = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+        //input = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
         //expecting hashed username and password from client to check against the login file
         client.setUsername(input.readLine());
         for(int i = 0; i < 2; i++){
@@ -120,7 +108,6 @@ class ClientHandler extends Thread {
             return true;
         return false;
     }
-
 
     public boolean loggedIn(Long hashedLogin, String username) throws IOException{
         //System.out.println("entering logged in  phase");
@@ -142,7 +129,6 @@ class ClientHandler extends Thread {
         return state;
     }
 
-
     /**
      * Once two users are connected the exchange begins
      *
@@ -150,7 +136,7 @@ class ClientHandler extends Thread {
      *
      * User1 <- server <- E(User2, 2nonce, g^b mod p, 1Nonce+1, key) <- User2)
      *
-     * User1 -> E(username, 2nonce, g^b mod p, H(1nonce+1, 2nonce+1, g^ab mod p, key)) -> server -> User2
+     * User1 -> E(username, 2nonce, H(1nonce+1, 2nonce+1, g^ab mod p, key)) -> server -> User2
      *
      *
      * @throws IOException
@@ -162,7 +148,26 @@ class ClientHandler extends Thread {
         temp = input.readLine();
         client.diffHell = Long.parseLong(temp);
         PFS.Authentication.authenticate(client.username, client.nonce, client.diffHell);
+    }
 
+    public void flush(){
+        try {
+            logs.flush();
+            output.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void failed(){
+        try {
+            System.out.println(client.getIpAddress() + " attempted login @ " + time);
+            logs.write("\n"+client.getIpAddress() + " attempted login @ " + time);
+            clientSocket.close();
+            flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
 

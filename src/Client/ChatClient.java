@@ -21,8 +21,11 @@ public class ChatClient {
 
             OutputStream output = socket.getOutputStream();
             PrintWriter writer = new PrintWriter(output, true);
-            writer.println("Thisisuser1");
-            writer.println("-559118235");
+            writer.println("Thisisuser1");//username
+            writer.println("-559118235");//password
+            writer.println("1234");//nonce
+            writer.println("4567");
+
             //writer.println("testing from client");
 
             String serverMessage = reader.readLine();

@@ -8,7 +8,6 @@ import java.awt.event.*;
 import static java.lang.System.out;
 
 import PFS.DiffieHellman;
-import PFS.DiffieHellman.*;
 
 public class  testClient extends JFrame implements ActionListener {
     String uname;

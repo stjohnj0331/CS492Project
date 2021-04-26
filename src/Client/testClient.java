@@ -6,6 +6,10 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import static java.lang.System.out;
+
+import PFS.DiffieHellman;
+import PFS.DiffieHellman.*;
+
 public class  testClient extends JFrame implements ActionListener {
     String uname;
     PrintWriter pw;
@@ -14,6 +18,7 @@ public class  testClient extends JFrame implements ActionListener {
     JTextField tfInput;
     JButton btnSend,btnExit;
     Socket client;
+    DiffieHellman cybSecTools = new DiffieHellman();
 
     public testClient(String uname, String password, String serverName) throws Exception {
         super(uname);  // set title for frame
@@ -28,7 +33,7 @@ public class  testClient extends JFrame implements ActionListener {
          */
         pw.println(uname);  // send name to server
         pw.println(password);
-        pw.println("1324");//nonce
+        pw.println(cybSecTools.getNonce());//nonce
         pw.println("5678");//diffHell
         //-----------------sending mutual authentication info END-----------------------//
 

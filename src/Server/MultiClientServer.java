@@ -1,5 +1,7 @@
 package Server;
 
+import Utilities.Utilities;
+
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -41,6 +43,7 @@ public class MultiClientServer {
     public static void main(String[] args){
         MultiClientServer server = new MultiClientServer();
         try{
+            Utilities u = new Utilities();
             server.start(MultiClientServer.port);
         }catch(Exception e){
             e.printStackTrace();

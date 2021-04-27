@@ -6,9 +6,7 @@ import java.io.InputStreamReader;
 
 public class Utilities {
 
-    public void VMCheck() throws IOException {
-        //try to check for windows or linux OS
-
+    public void VMCheck() throws IOException {//change to return int or boolean for VM requirement
         try {
             String command = "systeminfo";
 
@@ -21,15 +19,14 @@ public class Utilities {
             while ((line = reader.readLine()) != null) {
                 if(line.contains("System Manufacturer"))
                     if(line.contains("VMware"))
-                        System.out.println("Using a VM");
+                        System.out.println("Using a VM");//replace with boolean return
                     else
-                        System.out.println("Not Using a VM");
-
+                        System.out.println("Not Using a VM");//replace with boolean return
             }
 
             reader.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("Error -> "+e.getMessage());
         }
         try{
             String command = "systemd-detect-virt";
@@ -42,13 +39,12 @@ public class Utilities {
 
             while ((line = reader.readLine()) != null) {
                     if(line.contains("vmware"))
-                        System.out.println("Using a VM");
+                        System.out.println("Using a VM");//replace with boolean return
                     else
-                        System.out.println("Not Using a VM");
-
+                        System.out.println("Not Using a VM");//replace with boolean return
             }
         }catch(Exception e){
-
+            System.out.println("Error -> "+e.getMessage());
         }
     }
 }

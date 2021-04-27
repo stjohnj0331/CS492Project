@@ -39,7 +39,7 @@ public class testClient2 extends JFrame implements ActionListener {
         pw.println(uname);  // send name to server
         pw.println(password);
         pw.println(cybSecTools.CryptoSecureRand());//nonce
-        pw.println("5678");//diffHell
+        pw.println();//diffHell
         //-----------------sending mutual authentication info END-----------------------//
 
         buildInterface();

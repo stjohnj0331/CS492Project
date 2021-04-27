@@ -7,3 +7,9 @@ out/*
 src/Server/logs.txt
 
 src/Server/login.txt
+
+/.vs/
+
+/SecuritProject/
+
+src/Security Project.iml

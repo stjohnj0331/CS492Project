@@ -1,11 +1,8 @@
 package Server;
 
 import java.io.*;
-import java.net.MulticastSocket;
 import java.net.Socket;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Scanner;
 
 class ClientHandler extends Thread {//essentially a thread
@@ -113,7 +110,6 @@ class ClientHandler extends Thread {//essentially a thread
     }
 
     public boolean checkCredentials(Long hashedLogin, String username) throws IOException{
-        //System.out.println("entering logged in  phase");
         File login = new File("src/Server/login.txt");
         Scanner reader = new Scanner(login);
         boolean state = false;
@@ -156,7 +152,7 @@ class ClientHandler extends Thread {//essentially a thread
     public void flush(){
         try {
             logs.flush();
-            //output.flush();
+            output.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -1,13 +1,12 @@
 package Client;
 
-import java.io.*;
-import java.net.*;
+import PFS.DiffieHellman;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import static java.lang.System.out;
-
-import PFS.DiffieHellman;
+import java.io.*;
+import java.net.*;
+import java.lang.*;
 
 public class  testClient extends JFrame implements ActionListener {
     String uname;
@@ -20,7 +19,7 @@ public class  testClient extends JFrame implements ActionListener {
     DiffieHellman cybSecTools = new DiffieHellman();
 
     public testClient(String uname, String password, String serverName) throws Exception {
-        super(uname);  // set title for frame
+        super(uname);
         this.uname = uname;
         client  = new Socket(serverName,3000);
         br = new BufferedReader( new InputStreamReader( client.getInputStream()) ) ;
@@ -37,7 +36,7 @@ public class  testClient extends JFrame implements ActionListener {
         //-----------------sending mutual authentication info END-----------------------//
 
         buildInterface();
-        new MessagesThread().start();  // create thread to listen for messages
+        new MessagesThread().start();
     }
 
     public void buildInterface() {
@@ -67,6 +66,12 @@ public class  testClient extends JFrame implements ActionListener {
         add(bp,"South");
         btnSend.addActionListener(this);
         btnExit.addActionListener(this);
+        setLocationRelativeTo(null);
+        /*
+           Disabled close button for now so that I can control shutdown operations for clients such as the
+           disposal of the DH key and hashed session key.
+         */
+        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         setSize(500,300);
         setVisible(true);
         pack();
@@ -76,7 +81,7 @@ public class  testClient extends JFrame implements ActionListener {
         if ( evt.getSource() == btnExit ) {
             pw.println("end");  // send end to server so that server knows about the termination
             System.exit(0);
-        } if(evt.getSource() == btnSend){
+        } if(evt.getSource() == btnSend) {
             // send message to server
             pw.println(tfInput.getText());
             tfInput.setText("");
@@ -90,14 +95,14 @@ public class  testClient extends JFrame implements ActionListener {
                 JOptionPane.PLAIN_MESSAGE);
         String password = JOptionPane.showInputDialog(null,"Enter your password :", "Password",
                 JOptionPane.PLAIN_MESSAGE);
-        String serverName = "73.253.7.146";
+        String serverName = "192.168.1.10";
         try {
             new testClient( name, password, serverName);
         } catch(Exception ex) {
-            out.println( "Error --> " + ex.getMessage());
+            System.out.println( "Error --> " + ex.getMessage());
         }
 
-    } // end of main
+    }
 
     // inner class for Messages Thread
     class  MessagesThread extends Thread {
@@ -111,4 +116,4 @@ public class  testClient extends JFrame implements ActionListener {
             } catch(Exception ex) {ex.getMessage();}
         }
     }
-} //  end of client
+}

@@ -5,7 +5,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 
 public class Utilities {
-
+    /**
+     * currently only checks for VMware virtualization since that is what the test server runs
+     * this would be expanded to check for other VM environments if it went into actual production
+     * @throws IOException
+     */
     public void VMCheck() throws IOException {//change to return int or boolean for VM requirement
         try {
             String command = "systeminfo";

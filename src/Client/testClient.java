@@ -1,6 +1,7 @@
 package Client;
 
 import Authentication.DiffieHellman;
+import Authentication.MutAuthData;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -9,14 +10,15 @@ import java.net.*;
 import java.lang.*;
 
 public class  testClient extends JFrame implements ActionListener {
-    String uname;
-    PrintWriter pw;
-    BufferedReader br;
-    JTextArea  taMessages;
-    JTextField tfInput;
-    JButton btnSend,btnExit;
-    Socket client;
-    DiffieHellman cybSecTools = new DiffieHellman();
+    private String uname;
+    private PrintWriter pw;
+    private BufferedReader br;
+    private JTextArea  taMessages;
+    private JTextField tfInput;
+    private JButton btnSend,btnExit;
+    private Socket client;
+    private DiffieHellman dh = new DiffieHellman();
+    private MutAuthData mydataObject;
 
     public testClient(String uname, String password, String serverName) throws Exception {
         super(uname);
@@ -29,15 +31,19 @@ public class  testClient extends JFrame implements ActionListener {
         //-----------------Client to server authentication------------------------------//
         pw.println(uname);
         pw.println(password);
-
-        //-----------------generating mutual authentication info------------------------//
-
-
-        //-----------------sending mutual authentication info --------------------------//
+        //-----------------Symmetric key creation and distribution----------------------//
 
 
+        //-----------------generating public mutual authentication info-----------------//
+        mydataObject = dh.DHKeyGenerator();
+        //-----------------sending/receiving public mutual authentication info ---------//
+        new DataThread().start();
+        //-----------------generating private mutual authentication info----------------//
+        mydataObject.setDhPrivateKey(dh.buildKey(mydataObject.getKeyAgree(), mydataObject.getDhPublicKey()));
+        //----------------------------------Authenticate--------------------------------//
 
-        //-----------------if authenticated build out messenger interface -------------//
+        //-----------------if authenticated build out messenger interface---------------//
+
         buildInterface();
         new MessagesThread().start();
 
@@ -93,10 +99,10 @@ public class  testClient extends JFrame implements ActionListener {
     }
 
     public static void main(String ... args) {
-
-        // take username from user
+        //take username from user
         String name = JOptionPane.showInputDialog(null,"Enter your username :", "Login",
                 JOptionPane.PLAIN_MESSAGE);
+        //take password from user
         String password = JOptionPane.showInputDialog(null,"Enter your password :", "Password",
                 JOptionPane.PLAIN_MESSAGE);
         String serverName = "192.168.1.10";
@@ -105,11 +111,27 @@ public class  testClient extends JFrame implements ActionListener {
         } catch(Exception ex) {
             System.out.println( "Error --> " + ex.getMessage());
         }
-
+    }
+    //inner class for sending and receiving data objects
+    class DataThread extends Thread{
+        OutputStream out;
+        ObjectOutputStream oOut;
+        InputStream in;
+        ObjectInputStream oIn;
+        public void run(){
+            try{
+                out = client.getOutputStream();
+                oOut = new ObjectOutputStream(out);
+                System.out.println("Sending authentication data");
+                oOut.writeObject(mydataObject);
+            }catch(Exception e){
+                e.printStackTrace();
+            }
+        }
     }
 
     // inner class for Messages Thread
-    class  MessagesThread extends Thread {
+    class MessagesThread extends Thread {
         public void run() {
             String line;
             try {

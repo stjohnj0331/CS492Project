@@ -1,7 +1,6 @@
 package Server;
 
 import Utilities.Utilities;
-
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -10,9 +9,9 @@ import java.util.List;
 
 public class MultiClientServer {
     private ServerSocket server;
-    static int port = 3000;
+    private static int port = 3000;
     static int clientCount = 0;
-    static List<ClientHandler> loggedIn = new ArrayList<>();
+    private static List<ClientHandler> loggedIn = new ArrayList<>();
     static List<String> clients = new ArrayList<>();
 
     /**

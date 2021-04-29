@@ -1,17 +1,18 @@
 package Authentication;
 
 import javax.crypto.KeyAgreement;
+import java.io.Serializable;
 
-public class MutAuthData {
+public class MutAuthData implements Serializable {
 
-    String username;
-    Long nonce;
-    byte[] dhPublicKey;
-    KeyAgreement keyAgree;
-    DiffieHellman dh = new DiffieHellman();
+    private String username;
+    private Long nonce;
+    private byte[] dhPublicKey;
+    private byte[] dhPrivateKey;
+    private KeyAgreement keyAgree;
+    private DiffieHellman dh = new DiffieHellman();
 
     public MutAuthData(byte[] dhPublicKey, KeyAgreement keyAgree) {
-        this.nonce = dh.CryptoSecureRand();
         this.dhPublicKey = dhPublicKey;
         this.keyAgree = keyAgree;
     }
@@ -23,6 +24,39 @@ public class MutAuthData {
     public void setUsername(String username) {
         this.username = username;
     }
+
+    public Long getNonce() {
+        return nonce;
+    }
+
+    public void setNonce(Long nonce) {
+        this.nonce = nonce;
+    }
+
+    public byte[] getDhPublicKey() {
+        return dhPublicKey;
+    }
+
+    public void setDhPublicKey(byte[] dhPublicKey) {
+        this.dhPublicKey = dhPublicKey;
+    }
+
+    public byte[] getDhPrivateKey() {
+        return dhPrivateKey;
+    }
+
+    public void setDhPrivateKey(byte[] dhPrivateKey) {
+        this.dhPrivateKey = dhPrivateKey;
+    }
+
+    public KeyAgreement getKeyAgree() {
+        return keyAgree;
+    }
+
+    public void setKeyAgree(KeyAgreement keyAgree) {
+        this.keyAgree = keyAgree;
+    }
+
     public void deleteData(){
         username = " ";
         nonce = (long)0;

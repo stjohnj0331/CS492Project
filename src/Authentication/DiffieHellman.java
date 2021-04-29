@@ -61,9 +61,7 @@ public class DiffieHellman {
     public MutAuthData DHKeyGenerator(byte[] DHInitPubKeyEnc) throws Exception {
         KeyFactory KeyFac = KeyFactory.getInstance("DH");
         X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(DHInitPubKeyEnc);
-
         PublicKey initPubKey = KeyFac.generatePublic(x509KeySpec);
-
         DHParameterSpec dhParamFromInitPubKey = ((DHPublicKey)initPubKey).getParams();
 
         // User creates their own DH key pair
@@ -89,8 +87,6 @@ public class DiffieHellman {
 
     public Long CryptoSecureRand(){
         SecureRandom random = new SecureRandom();
-        Long nonce;
-        nonce = random.nextLong();
-        return nonce;
+        return random.nextLong();
     }
 }

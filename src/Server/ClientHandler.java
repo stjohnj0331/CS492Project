@@ -8,10 +8,10 @@ import java.util.Scanner;
 class ClientHandler extends Thread {
     private PrintWriter output;
     private BufferedReader input;
-    FileWriter logs;
-    File logsPath = new File("src/Server/logs.txt");
-    LocalDateTime time = LocalDateTime.now();
-    Socket clientSocket;
+    private FileWriter logs;
+    private File logsPath = new File("src/Server/logs.txt");
+    private LocalDateTime time = LocalDateTime.now();
+    private Socket clientSocket;
     Client client;
 
     public ClientHandler(Socket socket) {
@@ -56,6 +56,7 @@ class ClientHandler extends Thread {
 
                     //------------------end login----------------//
 
+                    //-----------------messaging loop------------------------//
                     try {
                         String inputLine;
                         while ((inputLine = input.readLine()) != null) {
@@ -70,6 +71,7 @@ class ClientHandler extends Thread {
                             sendMessage("Me: ",inputLine);
                             flush();
                         }
+                        //-----------------messaging loop end-----------------//
                     }catch(Exception e){
                             e.getMessage();
                     }
@@ -132,13 +134,14 @@ class ClientHandler extends Thread {
     }
 
     /**
-     * Once two users are connected the exchange begins
+     * After shared symmetric key is generated and
+     * once two users are connected the exchange begins
      *
-     * User1 -> E(User1, 1nonce, g^a mod p, key) -> server -> User2
+     * User1 -> E(User1, 1nonce, g^a mod p) -> server -> User2
      *
-     * User1 <- server <- E(User2, 2nonce, g^b mod p, 1Nonce+1, key) <- User2)
+     * User1 <- server <- E(User2, 2nonce, g^b mod p, 1Nonce+1) <- User2
      *
-     * User1 -> E(username, 2nonce, H(1nonce+1, 2nonce+1, g^ab mod p, key)) -> server -> User2
+     * User1 -> E(2nonce+1, H(1nonce+1, 2nonce+1, g^ab mod p, key)) -> server -> User2
      *
      *
      * @throws IOException

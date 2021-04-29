@@ -2,6 +2,8 @@ package Client;
 
 import Authentication.DiffieHellman;
 import Authentication.MutAuthData;
+import Server.MultiClientServer;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -21,6 +23,7 @@ public class  testClient2 extends JFrame implements ActionListener {
     private MutAuthData mydataObject;
     private MutAuthData theirDataObject;
 
+
     public testClient2(String uname, String password, String serverName) throws Exception {
         super(uname);
         this.uname = uname;
@@ -29,23 +32,35 @@ public class  testClient2 extends JFrame implements ActionListener {
         pw = new PrintWriter(client.getOutputStream(),true);
 
 
+        System.out.println("Authenticating to server");
         //-----------------Client to server authentication------------------------------//
         pw.println(uname);
         pw.println(password);
-        //-----------------Symmetric key creation and distribution----------------------//
+        /*
+            //-----------------Symmetric key creation and distribution----------------------//
 
+            //-----------------receiving public mutual authentication info -----------------//
+        System.out.println("receiving public mutual authentication info");
+            new DataThreadReceive().start();
+            //-----------------generating public mutual authentication info-----------------//
+        System.out.println("generating public mutual authentication info");
+            mydataObject = dh.DHKeyGenerator(theirDataObject.getDhPublicKey());
+            mydataObject.setTheirNonce(theirDataObject.getTheirNonce() + 1);
+            //-----------------sending public mutual authentication info -------------------//
+        System.out.println("sending public mutual authentication info");
+            new DataThreadSend().start();
+            if ((mydataObject.getMyNonce() + 1) == theirDataObject.getMyNonce()) {
+                //-----------------generating private mutual authentication info----------------//
+                mydataObject.setDhPrivateKey(dh.buildKey(mydataObject.getKeyAgree(), mydataObject.getDhPublicKey()));
+                //----------------------------------Authenticate--------------------------------//
 
-        //-----------------generating public mutual authentication info-----------------//
-        mydataObject = dh.DHKeyGenerator(theirDataObject.getDhPublicKey());
-        //-----------------sending/receiving public mutual authentication info ---------//
-        new DataThread().start();
-        //-----------------generating private mutual authentication info----------------//
-        mydataObject.setDhPrivateKey(dh.buildKey(mydataObject.getKeyAgree(), mydataObject.getDhPublicKey()));
-        //-----------------if authenticated build out messenger interface --------------//
-
-        buildInterface();
-        new MessagesThread().start();
-
+                //-----------------if authenticated, build out messenger interface -------------//
+*/
+                buildInterface();
+                new MessagesThread().start();//needs to be encrypted
+           /* } else
+                JOptionPane.showMessageDialog(null, "Failed to Authenticate", "Error",
+                        JOptionPane.PLAIN_MESSAGE);*/
     }
 
     public void buildInterface() {
@@ -112,20 +127,25 @@ public class  testClient2 extends JFrame implements ActionListener {
         }
     }
     //inner class for sending and receiving data objects
-    class DataThread extends Thread{
+    //inner class for sending and receiving data objects
+    class DataThreadSend extends Thread{
         OutputStream out;
         ObjectOutputStream oOut;
-        InputStream in;
-        ObjectInputStream oIn;
-        public void run(){
-            try{
+        public void run() {
+            try {
                 out = client.getOutputStream();
                 oOut = new ObjectOutputStream(out);
                 System.out.println("Sending authentication data");
                 oOut.writeObject(mydataObject);
-            }catch(Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
+    }
+    class DataThreadReceive extends Thread{
+        InputStream in;
+        ObjectInputStream oIn;
+        public void run() {
             try{
                 int dataRec = 0;
                 in = client.getInputStream();

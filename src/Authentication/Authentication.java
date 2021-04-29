@@ -1,10 +1,5 @@
 package Authentication;
 
 public class Authentication {
-
-    public static void authenticate(){
-
-    }
-
-
+    public static boolean authenticate(){boolean authentic = false; return authentic;}
 }

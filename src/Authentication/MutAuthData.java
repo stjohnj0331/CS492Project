@@ -6,7 +6,8 @@ import java.io.Serializable;
 public class MutAuthData implements Serializable {
 
     private String username;
-    private Long nonce;
+    private Long myNonce;
+    private Long theirNonce;
     private byte[] dhPublicKey;
     private byte[] dhPrivateKey;
     private KeyAgreement keyAgree;
@@ -15,6 +16,7 @@ public class MutAuthData implements Serializable {
     public MutAuthData(byte[] dhPublicKey, KeyAgreement keyAgree) {
         this.dhPublicKey = dhPublicKey;
         this.keyAgree = keyAgree;
+        myNonce = dh.CryptoSecureRand();
     }
 
     public String getUsername() {
@@ -23,14 +25,6 @@ public class MutAuthData implements Serializable {
 
     public void setUsername(String username) {
         this.username = username;
-    }
-
-    public Long getNonce() {
-        return nonce;
-    }
-
-    public void setNonce(Long nonce) {
-        this.nonce = nonce;
     }
 
     public byte[] getDhPublicKey() {
@@ -56,10 +50,21 @@ public class MutAuthData implements Serializable {
     public void setKeyAgree(KeyAgreement keyAgree) {
         this.keyAgree = keyAgree;
     }
+    public Long getMyNonce(){return myNonce;}
+
+    public Long getTheirNonce() {
+        return theirNonce;
+    }
+
+    public void setTheirNonce(Long theirNonce) {
+        this.theirNonce = ++theirNonce;
+    }
 
     public void deleteData(){
         username = " ";
-        nonce = (long)0;
+        myNonce = (long)0;
+        theirNonce = (long)0;
         dhPublicKey = null;
+        dhPrivateKey = null;
     }
 }

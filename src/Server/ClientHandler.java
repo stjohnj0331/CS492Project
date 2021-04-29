@@ -4,10 +4,13 @@ import java.io.*;
 import java.net.Socket;
 import java.time.LocalDateTime;
 import java.util.Scanner;
+import Authentication.MutAuthData;
 
 class ClientHandler extends Thread {
     private PrintWriter output;
     private BufferedReader input;
+    ObjectInputStream oIn;
+    ObjectOutputStream oOut;
     private FileWriter logs;
     private File logsPath = new File("src/Server/logs.txt");
     private LocalDateTime time = LocalDateTime.now();
@@ -36,7 +39,7 @@ class ClientHandler extends Thread {
                 boolean loginAttempt = login();
 
                 if (loginAttempt) {//verifying to the server, hashed username and password
-                    //------------------Login-------------------//
+                    //-----------------------Login--------------------------------//
                     MultiClientServer.clientCount++;
                     MultiClientServer.clients.add(client.getUsername());
                     //to this client
@@ -48,15 +51,13 @@ class ClientHandler extends Thread {
                     flush();
 
 
-                    //------Initiate Symmetric key creation and distribution-----//
+                    //------------------end login--------------------------------//
 
-                    if(MultiClientServer.clientCount == 2){
+                    //------------------sending/receiving objects----------------//
 
-                    }
+                    //------------------sending/receiving objects end------------//
 
-                    //------------------end login----------------//
-
-                    //-----------------messaging loop------------------------//
+                    //-----------------messaging loop----------------------------//*/
                     try {
                         String inputLine;
                         while ((inputLine = input.readLine()) != null) {
@@ -71,7 +72,7 @@ class ClientHandler extends Thread {
                             sendMessage("Me: ",inputLine);
                             flush();
                         }
-                        //-----------------messaging loop end-----------------//
+                        //-----------------messaging loop end-------------------//
                     }catch(Exception e){
                             e.getMessage();
                     }
@@ -98,6 +99,12 @@ class ClientHandler extends Thread {
 
     public void sendMessage(String uname,String  msg)  {
         output.println( uname + ": " + msg);
+    }
+
+    public void sendObject(String name, MutAuthData object) throws IOException {
+        oOut = new ObjectOutputStream(clientSocket.getOutputStream());
+        System.out.println("Sending object");
+        oOut.writeObject(object);
     }
 
     public boolean login()throws Exception{
@@ -131,27 +138,6 @@ class ClientHandler extends Thread {
             }
         }
         return state;
-    }
-
-    /**
-     * After shared symmetric key is generated and
-     * once two users are connected the exchange begins
-     *
-     * User1 -> E(User1, 1nonce, g^a mod p) -> server -> User2
-     *
-     * User1 <- server <- E(User2, 2nonce, g^b mod p, 1Nonce+1) <- User2
-     *
-     * User1 -> E(2nonce+1, H(1nonce+1, 2nonce+1, g^ab mod p, key)) -> server -> User2
-     *
-     *
-     * @throws IOException
-     */
-    public void mutualAuth() throws IOException {
-        String temp = input.readLine();
-        //client.setNonce(Long.parseLong(temp));
-        temp = input.readLine();
-        //client.setDiffHell(Long.parseLong(temp));
-        Authentication.Authentication.authenticate();
     }
 
     /* Utility functions that just serve to clean up my code*/

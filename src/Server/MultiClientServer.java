@@ -17,7 +17,6 @@ public class MultiClientServer {
 
     /**
      *  starts the server when called and calls ClientHandler for new connections
-     *  testing github
      * @throws IOException
      */
     public void start(int port) throws IOException {
@@ -30,6 +29,7 @@ public class MultiClientServer {
             loggedIn.add(c);
         }
     }
+
     public static void broadcast(String user, String message)  {
         for ( ClientHandler c : loggedIn )
             if ( ! c.client.getUsername().equals(user) )

@@ -1,6 +1,6 @@
 package Client;
 
-import PFS.DiffieHellman;
+import Authentication.DiffieHellman;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -25,18 +25,22 @@ public class  testClient extends JFrame implements ActionListener {
         br = new BufferedReader( new InputStreamReader( client.getInputStream()) ) ;
         pw = new PrintWriter(client.getOutputStream(),true);
 
-        //-----------------sending mutual authentication info---------------------------//
-        /*
-        username and password will change to a hashed value
-         */
-        pw.println(uname);  // send name to server
-        pw.println(password);
-        pw.println(cybSecTools.CryptoSecureRand());//nonce
-        pw.println("5678");//diffHell
-        //-----------------sending mutual authentication info END-----------------------//
 
+        //-----------------Client to server authentication------------------------------//
+        pw.println(uname);
+        pw.println(password);
+
+        //-----------------generating mutual authentication info------------------------//
+
+
+        //-----------------sending mutual authentication info --------------------------//
+
+
+
+        //-----------------if authenticated build out messenger interface -------------//
         buildInterface();
         new MessagesThread().start();
+
     }
 
     public void buildInterface() {

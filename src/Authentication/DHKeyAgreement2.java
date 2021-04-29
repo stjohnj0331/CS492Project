@@ -1,4 +1,4 @@
-package PFS;
+package Authentication;
 
 /*
  * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
@@ -46,13 +46,11 @@ public class DHKeyAgreement2 {
         /*
          * Alice creates her own DH key pair with 2048-bit key size
          */
-        System.out.println("ALICE: Generate DH keypair ...");
         KeyPairGenerator aliceKpairGen = KeyPairGenerator.getInstance("DH");
         aliceKpairGen.initialize(2048);
         KeyPair aliceKpair = aliceKpairGen.generateKeyPair();
 
         // Alice creates and initializes her DH KeyAgreement object
-        System.out.println("ALICE: Initialization ...");
         KeyAgreement aliceKeyAgree = KeyAgreement.getInstance("DH");
         aliceKeyAgree.init(aliceKpair.getPrivate());
 
@@ -113,7 +111,7 @@ public class DHKeyAgreement2 {
 
 
 
-        /*--------------------------------------------Left off here------------------------------------------*/
+
 
 
 
@@ -125,6 +123,8 @@ public class DHKeyAgreement2 {
         byte[] aliceSharedSecret = aliceKeyAgree.generateSecret();
         int aliceLen = aliceSharedSecret.length;
         byte[] bobSharedSecret = new byte[aliceLen];
+
+        /*--------------------------------------------Left off here------------------------------------------*/
         int bobLen;
         bobLen = bobKeyAgree.generateSecret(bobSharedSecret, 0);
         System.out.println("Alice secret: " +

@@ -5,7 +5,7 @@ import java.net.Socket;
 import java.time.LocalDateTime;
 import java.util.Scanner;
 
-class ClientHandler extends Thread {//essentially a thread
+class ClientHandler extends Thread {
     private PrintWriter output;
     private BufferedReader input;
     FileWriter logs;
@@ -19,10 +19,12 @@ class ClientHandler extends Thread {//essentially a thread
         client = new Client();
         start();
     }
+
     /**
      *  validates clients created by MultiClientServer by checking login info, number of clients connected
      *  and writes to both the server logs and server terminal logins/logouts and attempted logins.
-     *  Gathers all of the data required for mutual authentication, perfect forward security,
+     *  Gathers all of the data required for mutual authentication, perfect forward security, and symmetric
+     *  key encryption
      */
     @Override public void run() {
         try {
@@ -34,7 +36,7 @@ class ClientHandler extends Thread {//essentially a thread
                 boolean loginAttempt = login();
 
                 if (loginAttempt) {//verifying to the server, hashed username and password
-                    //Login--------------------------------//
+                    //------------------Login-------------------//
                     MultiClientServer.clientCount++;
                     MultiClientServer.clients.add(client.getUsername());
                     //to this client
@@ -46,14 +48,14 @@ class ClientHandler extends Thread {//essentially a thread
                     flush();
 
 
-                    mutualAuth();
+                    //------Initiate Symmetric key creation and distribution-----//
 
-                    //end login----------------------------//
+                    if(MultiClientServer.clientCount == 2){
 
-                    /*
-                    client connection
-                    need to establish send and receive message threads
-                    */
+                    }
+
+                    //------------------end login----------------//
+
                     try {
                         String inputLine;
                         while ((inputLine = input.readLine()) != null) {
@@ -95,6 +97,7 @@ class ClientHandler extends Thread {//essentially a thread
     public void sendMessage(String uname,String  msg)  {
         output.println( uname + ": " + msg);
     }
+
     public boolean login()throws Exception{
         client.setUsername(input.readLine());
         for(int i = 0; i < 2; i++)
@@ -142,10 +145,10 @@ class ClientHandler extends Thread {//essentially a thread
      */
     public void mutualAuth() throws IOException {
         String temp = input.readLine();
-        client.setNonce(Long.parseLong(temp));
+        //client.setNonce(Long.parseLong(temp));
         temp = input.readLine();
-        client.setDiffHell(Long.parseLong(temp));
-        PFS.Authentication.authenticate(client.getUsername(), client.getNonce(), client.getDiffHell());
+        //client.setDiffHell(Long.parseLong(temp));
+        Authentication.Authentication.authenticate();
     }
 
     /* Utility functions that just serve to clean up my code*/

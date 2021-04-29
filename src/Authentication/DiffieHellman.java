@@ -45,7 +45,13 @@ public class DiffieHellman {
 
     //first key to be generated
     //alice generates her key and creates an object to store her data
-    public MutAuthData DHKeyGenerator() throws Exception {
+
+    /**
+     *
+     * @return
+     * @throws Exception
+     */
+    public MutAuthData DHPubKeyGenerator() throws Exception {
         KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("DH");
         keyPairGen.initialize(2048);
         KeyPair DHkeyPair = keyPairGen.generateKeyPair();
@@ -58,7 +64,14 @@ public class DiffieHellman {
 
     //second key to be generated
     //bob uses alice's key to generate an object that stores his agreement and public key
-    public MutAuthData DHKeyGenerator(byte[] DHInitPubKeyEnc) throws Exception {
+
+    /**
+     *
+     * @param DHInitPubKeyEnc
+     * @return
+     * @throws Exception
+     */
+    public MutAuthData DHPubKeyGenerator(byte[] DHInitPubKeyEnc) throws Exception {
         KeyFactory KeyFac = KeyFactory.getInstance("DH");
         X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(DHInitPubKeyEnc);
         PublicKey initPubKey = KeyFac.generatePublic(x509KeySpec);
@@ -77,7 +90,7 @@ public class DiffieHellman {
 
     }
     //returns the shared secret key for PFS
-    public byte[] buildKey(KeyAgreement keyAgree, byte[] pubKeyEnc) throws Exception {
+    public byte[] DHPrivKey(KeyAgreement keyAgree, byte[] pubKeyEnc) throws Exception {
         KeyFactory DHPrivateKey = KeyFactory.getInstance("DH");
         X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(pubKeyEnc);
         PublicKey pubKey = DHPrivateKey.generatePublic(x509KeySpec);

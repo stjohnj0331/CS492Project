@@ -1,8 +1,7 @@
-package Client;
+package Clients;
 
 import Authentication.DiffieHellman;
 import Authentication.MutAuthData;
-import Server.MultiClientServer;
 
 import javax.swing.*;
 import java.awt.*;
@@ -11,7 +10,7 @@ import java.io.*;
 import java.net.*;
 import java.lang.*;
 
-public class  testClient2 extends JFrame implements ActionListener {
+public class Client2 extends JFrame implements ActionListener {
     private String uname;
     private PrintWriter pw;
     private BufferedReader br;
@@ -24,7 +23,7 @@ public class  testClient2 extends JFrame implements ActionListener {
     private MutAuthData theirDataObject;
 
 
-    public testClient2(String uname, String password, String serverName) throws Exception {
+    public Client2(String uname, String password, String serverName) throws Exception {
         super(uname);
         this.uname = uname;
         client  = new Socket(serverName,3000);
@@ -33,7 +32,7 @@ public class  testClient2 extends JFrame implements ActionListener {
 
 
         System.out.println("Authenticating to server");
-        //-----------------Client to server authentication------------------------------//
+        //-----------------Clients to server authentication------------------------------//
         pw.println(uname);
         pw.println(password);
         /*
@@ -121,42 +120,9 @@ public class  testClient2 extends JFrame implements ActionListener {
                 JOptionPane.PLAIN_MESSAGE);
         String serverName = "192.168.1.10";
         try {
-            new testClient( name, password, serverName);
+            new Client2( name, password, serverName);
         } catch(Exception ex) {
             System.out.println( "Error --> " + ex.getMessage());
-        }
-    }
-    //inner class for sending and receiving data objects
-    //inner class for sending and receiving data objects
-    class DataThreadSend extends Thread{
-        OutputStream out;
-        ObjectOutputStream oOut;
-        public void run() {
-            try {
-                out = client.getOutputStream();
-                oOut = new ObjectOutputStream(out);
-                System.out.println("Sending authentication data");
-                oOut.writeObject(mydataObject);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-    class DataThreadReceive extends Thread{
-        InputStream in;
-        ObjectInputStream oIn;
-        public void run() {
-            try{
-                int dataRec = 0;
-                in = client.getInputStream();
-                oIn = new ObjectInputStream(in);
-                while(dataRec < 1){
-                    theirDataObject = (MutAuthData) oIn.readObject();
-                    dataRec++;
-                }
-            }catch(Exception e){
-                e.printStackTrace();
-            }
         }
     }
 

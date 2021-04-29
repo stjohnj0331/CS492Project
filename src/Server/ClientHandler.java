@@ -4,13 +4,14 @@ import java.io.*;
 import java.net.Socket;
 import java.time.LocalDateTime;
 import java.util.Scanner;
-import Authentication.MutAuthData;
 
 class ClientHandler extends Thread {
     private PrintWriter output;
     private BufferedReader input;
-    ObjectInputStream oIn;
-    ObjectOutputStream oOut;
+    InputStream is;
+    OutputStream os;
+    ObjectInputStream ois;
+    ObjectOutputStream oos;
     private FileWriter logs;
     private File logsPath = new File("src/Server/logs.txt");
     private LocalDateTime time = LocalDateTime.now();
@@ -20,6 +21,7 @@ class ClientHandler extends Thread {
     public ClientHandler(Socket socket) {
         this.clientSocket = socket;
         client = new Client();
+        MultiClientServer.increaseClientCount();
         start();
     }
 
@@ -31,8 +33,10 @@ class ClientHandler extends Thread {
      */
     @Override public void run() {
         try {
-            output = new PrintWriter(clientSocket.getOutputStream(), true);
-            input = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            is = clientSocket.getInputStream();
+            os = clientSocket.getOutputStream();
+            output = new PrintWriter(os, true);
+            input = new BufferedReader(new InputStreamReader(is));
             client.setIpAddress(clientSocket.getInetAddress().toString());
             logs = new FileWriter(logsPath,true);
             try {
@@ -40,8 +44,6 @@ class ClientHandler extends Thread {
 
                 if (loginAttempt) {//verifying to the server, hashed username and password
                     //-----------------------Login--------------------------------//
-                    MultiClientServer.clientCount++;
-                    MultiClientServer.clients.add(client.getUsername());
                     //to this client
                     output.println(" Welcome to SecureChat");
                     //to the server terminal
@@ -49,15 +51,6 @@ class ClientHandler extends Thread {
                     //to the logs
                     logs.write("\n"+client.getIpAddress() + " logged in @ " + time);
                     flush();
-
-
-                    //------------------end login--------------------------------//
-
-                    //------------------sending/receiving objects----------------//
-
-                    //------------------sending/receiving objects end------------//
-
-                    //-----------------messaging loop----------------------------//*/
                     try {
                         String inputLine;
                         while ((inputLine = input.readLine()) != null) {
@@ -68,8 +61,8 @@ class ClientHandler extends Thread {
                                 flush();
                                 break;
                             }
-                            MultiClientServer.broadcast(client.getUsername(), inputLine);
-                            sendMessage("Me: ",inputLine);
+                            MultiClientServer.broadcast(client.getUsername(), inputLine);//sends message to server
+                            sendMessage("Me: ",inputLine);//prints message to this users chatbox
                             flush();
                         }
                         //-----------------messaging loop end-------------------//
@@ -97,15 +90,7 @@ class ClientHandler extends Thread {
         }
     }
 
-    public void sendMessage(String uname,String  msg)  {
-        output.println( uname + ": " + msg);
-    }
-
-    public void sendObject(String name, MutAuthData object) throws IOException {
-        oOut = new ObjectOutputStream(clientSocket.getOutputStream());
-        System.out.println("Sending object");
-        oOut.writeObject(object);
-    }
+    public void sendMessage(String uname,String  msg)  { output.println( uname + ": " + msg); }
 
     public boolean login()throws Exception{
         client.setUsername(input.readLine());
@@ -154,6 +139,7 @@ class ClientHandler extends Thread {
         try {
             System.out.println(client.getIpAddress() + " attempted login @ " + time);
             logs.write("\n"+client.getIpAddress() + " attempted login @ " + time);
+            MultiClientServer.decreaseClientCount();
             clientSocket.close();
             flush();
         } catch (IOException e) {

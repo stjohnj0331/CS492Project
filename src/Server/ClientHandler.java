@@ -63,9 +63,10 @@ class ClientHandler extends Thread {
                             }else {
                                 if(inputLine.equals("start")){
                                     MultiClientServer.broadcast1(client.getUsername(), inputLine);
+                                }else {
+                                    MultiClientServer.broadcast(client.getUsername(), inputLine);//sends message to server
+                                    sendMessage("Me: ", inputLine);//prints message to this users chatbox
                                 }
-                                MultiClientServer.broadcast(client.getUsername(), inputLine);//sends message to server
-                                sendMessage("Me: ", inputLine);//prints message to this users chatbox
                                 flush();
                             }
                         }

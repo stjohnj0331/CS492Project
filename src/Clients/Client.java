@@ -13,6 +13,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.concurrent.TimeUnit;
 
 public class Client extends JFrame implements ActionListener {
     private String uname;
@@ -45,6 +46,7 @@ public class Client extends JFrame implements ActionListener {
         //wait until both users are logged in
         while(wait == 0){
             pw.println("start");
+            TimeUnit.SECONDS.sleep(1);
         }
         //-----------------Symmetric key creation and distribution----------------------//
         taMessages.append("Starting encryption" + "\n");

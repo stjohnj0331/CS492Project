@@ -41,12 +41,14 @@ public class Client extends JFrame implements ActionListener {
         //send username and password to the client handler
         pw.println(uname);
         pw.println(password);
-        buildInterface();
         new MessagesThread().start();//needs to be encrypted
+        buildInterface();
         //wait until both users are logged in
-        while(wait == 0){
+        while(wait < 3){
             pw.println("start");
-            TimeUnit.SECONDS.sleep(1);
+            TimeUnit.SECONDS.sleep(2);
+            if(wait >= 1)
+                wait++;
         }
         //-----------------Symmetric key creation and distribution----------------------//
         taMessages.append("Starting encryption" + "\n");

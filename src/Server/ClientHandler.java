@@ -45,6 +45,7 @@ class ClientHandler extends Thread {
                 if (loginAttempt) {//verifying to the server, hashed username and password
 
                     //-----------------messaging loop begins-------------------//
+                    //output.println(" Welcome to SecureChat");
                     //to the server terminal
                     System.out.println(client.getIpAddress() + " logged in @ " + time);
                     //to the logs
@@ -103,12 +104,11 @@ class ClientHandler extends Thread {
         client.setUsername(input.readLine());//sets username for client
         for(int i = 0; i < 2; i++) {
             if ((!MultiClientServer.loggedIn.isEmpty()) && i < MultiClientServer.getClientCount() &&
-            MultiClientServer.loggedIn.get(i).client.getUsername().equals(client.getUsername())){
+                    MultiClientServer.loggedIn.get(i).client.getUsername().equals(client.getUsername())){
                 output.println("user already logged in");
                 return false;
             }
         }
-        //MultiClientServer.loggedIn.add(this);
         String password = input.readLine();
         long hashedLogin = Long.parseLong(password);
         if(checkCredentials(hashedLogin, client.getUsername())) {
@@ -160,4 +160,3 @@ class ClientHandler extends Thread {
         }
     }
 }
-

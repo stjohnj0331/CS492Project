@@ -1,7 +1,7 @@
 package Clients;
 
 import Authentication.DiffieHellman;
-import Authentication.MutAuthData;
+import Authentication.*;
 
 import javax.swing.*;
 import java.awt.*;
@@ -21,32 +21,31 @@ public class Client2 extends JFrame implements ActionListener {
     private DiffieHellman dh = new DiffieHellman();
     private MutAuthData mydataObject;
     private MutAuthData theirDataObject;
-
+    private boolean start = false;
 
     public Client2(String uname, String password, String serverName) throws Exception {
         super(uname);
-        this.uname = uname;
         client  = new Socket(serverName,3000);
         br = new BufferedReader( new InputStreamReader( client.getInputStream()) ) ;
         pw = new PrintWriter(client.getOutputStream(),true);
-
 
         System.out.println("Authenticating to server");
         //-----------------Clients to server authentication------------------------------//
         pw.println(uname);
         pw.println(password);
+
+
+        new DataThread().start();//waiting for start signal
+        //System.out.println("2 clients connected");
         /*
             //-----------------Symmetric key creation and distribution----------------------//
 
-            //-----------------receiving public mutual authentication info -----------------//
-        System.out.println("receiving public mutual authentication info");
-            new DataThreadReceive().start();
             //-----------------generating public mutual authentication info-----------------//
-        System.out.println("generating public mutual authentication info");
             mydataObject = dh.DHKeyGenerator(theirDataObject.getDhPublicKey());
             mydataObject.setTheirNonce(theirDataObject.getTheirNonce() + 1);
+            //-----------------receiving public mutual authentication info -----------------//
+            new DataThreadReceive().start();
             //-----------------sending public mutual authentication info -------------------//
-        System.out.println("sending public mutual authentication info");
             new DataThreadSend().start();
             if ((mydataObject.getMyNonce() + 1) == theirDataObject.getMyNonce()) {
                 //-----------------generating private mutual authentication info----------------//
@@ -55,13 +54,19 @@ public class Client2 extends JFrame implements ActionListener {
 
                 //-----------------if authenticated, build out messenger interface -------------//
 */
-                buildInterface();
-                new MessagesThread().start();//needs to be encrypted
-           /* } else
-                JOptionPane.showMessageDialog(null, "Failed to Authenticate", "Error",
-                        JOptionPane.PLAIN_MESSAGE);*/
+        buildInterface();
+        new MessagesThread().start();//needs to be encrypted
     }
 
+    public void actionPerformed(ActionEvent evt) {
+        if ( evt.getSource() == btnExit ) {
+            pw.println("end");  // send end to server so that server knows to terminate connection
+            System.exit(0);
+        } if(evt.getSource() == btnSend) {
+            pw.println(tfInput.getText());// sends message to clientHandler by printing to outputStream
+            tfInput.setText("");
+        }
+    }
     public void buildInterface() {
         btnSend = new JButton("Send");
         btnExit = new JButton("Exit");
@@ -100,17 +105,6 @@ public class Client2 extends JFrame implements ActionListener {
         pack();
     }
 
-    public void actionPerformed(ActionEvent evt) {
-        if ( evt.getSource() == btnExit ) {
-            pw.println("end");  // send end to server so that server knows about the termination
-            System.exit(0);
-        } if(evt.getSource() == btnSend) {
-            // send message to server
-            pw.println(tfInput.getText());
-            tfInput.setText("");
-        }
-    }
-
     public static void main(String ... args) {
         //take username from user
         String name = JOptionPane.showInputDialog(null,"Enter your username :", "Login",
@@ -125,8 +119,28 @@ public class Client2 extends JFrame implements ActionListener {
             System.out.println( "Error --> " + ex.getMessage());
         }
     }
+    class DataThread extends Thread{
+        public void run () {
+            System.out.println("yay");
+            String line;
+            int count = 0;
+            try {
+                while (count == 0) {
+                    line = br.readLine();
+                    if (line.equals("start")) {
+                        start = true;
+                        count++;
+                    }
+                }
+                System.out.println("server said to start");
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.exit(1);
+            }
+        }
 
-    // inner class for Messages Thread
+    }
+    // sends received messages to the chatbox
     class MessagesThread extends Thread {
         public void run() {
             String line;

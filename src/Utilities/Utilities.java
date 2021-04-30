@@ -51,4 +51,14 @@ public class Utilities {
             System.out.println("Error -> "+e.getMessage());
         }
     }
+    public static void increaseMem(){
+        try{
+            String command = "java -Xmx1g";
+
+            Process process = Runtime.getRuntime().exec(command);
+
+        }catch(Exception e){
+            System.out.println("Error -> "+e.getMessage());
+        }
+    }
 }

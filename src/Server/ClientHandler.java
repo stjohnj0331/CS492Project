@@ -17,6 +17,7 @@ class ClientHandler extends Thread {
     private LocalDateTime time = LocalDateTime.now();
     private Socket clientSocket;
     Client client;
+    MultiClientServer server = new MultiClientServer();
 
     public ClientHandler(Socket socket) {
         this.clientSocket = socket;
@@ -44,8 +45,6 @@ class ClientHandler extends Thread {
                 if (loginAttempt) {//verifying to the server, hashed username and password
 
                     //-----------------messaging loop begins-------------------//
-                    //to this client
-                    output.println(" Welcome to SecureChat");
                     //to the server terminal
                     System.out.println(client.getIpAddress() + " logged in @ " + time);
                     //to the logs
@@ -56,14 +55,19 @@ class ClientHandler extends Thread {
                         while ((inputLine = input.readLine()) != null) {
                             if (inputLine.equals("end")) {
                                 MultiClientServer.decreaseClientCount();
+                                MultiClientServer.removeUser(this.client.getUsername());
                                 System.out.println(client.getIpAddress() + " logged out @ " + time);
                                 logs.write("\n" + client.getIpAddress() + " logged out @ " + time);
                                 flush();
                                 break;
+                            }else {
+                                if(inputLine.equals("start")){
+                                    MultiClientServer.broadcast1(client.getUsername(), inputLine);
+                                }
+                                MultiClientServer.broadcast(client.getUsername(), inputLine);//sends message to server
+                                sendMessage("Me: ", inputLine);//prints message to this users chatbox
+                                flush();
                             }
-                            MultiClientServer.broadcast(client.getUsername(), inputLine);//sends message to server
-                            sendMessage("Me: ",inputLine);//prints message to this users chatbox
-                            flush();
                         }
                         //-----------------messaging loop end-------------------//
                     }catch(Exception e){
@@ -79,7 +83,8 @@ class ClientHandler extends Thread {
                    is attempted that causes any exceptions, sort of a redundancy.
                 */
             } catch (Exception e) {
-                System.out.println("Error --> " + e.getMessage());
+                System.out.println("Error in client handler--> " + e.getMessage());
+                e.printStackTrace();
                 failed();
             }
             input.close();
@@ -90,20 +95,23 @@ class ClientHandler extends Thread {
         }
     }
 
-    public void sendMessage(String uname,String  msg)  { output.println( uname + ": " + msg); }
-    public void sendMessage(String msg){while(msg != null)output.println(msg);}
+    public void sendMessage1(String msg){output.println(msg);}
+    public void sendMessage(String uname, String  msg)  { output.println( uname + ": " + msg); }
 
     public boolean login()throws Exception{
-        client.setUsername(input.readLine());
-        for(int i = 0; i < 2; i++)
-            if(MultiClientServer.clients.contains(client.getUsername())) {
+        client.setUsername(input.readLine());//sets username for client
+        for(int i = 0; i < 2; i++) {
+            if ((!MultiClientServer.loggedIn.isEmpty()) && i < MultiClientServer.getClientCount() &&
+            MultiClientServer.loggedIn.get(i).client.getUsername().equals(client.getUsername())){
                 output.println("user already logged in");
                 return false;
             }
+        }
+        //MultiClientServer.loggedIn.add(this);
         String password = input.readLine();
         long hashedLogin = Long.parseLong(password);
         if(checkCredentials(hashedLogin, client.getUsername())) {
-            MultiClientServer.clients.add(client.getUsername());
+            MultiClientServer.loggedIn.add(this);
             MultiClientServer.increaseClientCount();
             return true;
         }
@@ -143,7 +151,7 @@ class ClientHandler extends Thread {
         try {
             System.out.println(client.getIpAddress() + " attempted login @ " + time);
             logs.write("\n"+client.getIpAddress() + " attempted login @ " + time);
-            MultiClientServer.decreaseClientCount();
+            server.decreaseClientCount();
             clientSocket.close();
             flush();
         } catch (IOException e) {

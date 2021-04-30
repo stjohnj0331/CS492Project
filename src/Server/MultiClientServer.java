@@ -5,15 +5,21 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 public class MultiClientServer {
     private ServerSocket server;
     private static int port = 3000;
     static int clientCount = 0;
-    static List<ClientHandler> loggedIn = new ArrayList<>();
+    static List<ClientHandler> loggedIn = new ArrayList<>(2);
     static List<String> clients = new ArrayList<>();
+    private static boolean broadcast = false;
 
+    public static void removeUser(String username){
+        for(int i = 0 ; i < loggedIn.size() ; i++){
+            if(loggedIn.get(i).client.getUsername().equals(username))
+                loggedIn.remove(i);
+        }
+    }
     public static int getClientCount(){return clientCount;}
     public static void decreaseClientCount(){clientCount--;}
     public static void increaseClientCount(){clientCount++;}
@@ -26,17 +32,13 @@ public class MultiClientServer {
         System.out.println("Server Listening on port "+port);
         server = new ServerSocket(port);
         //only allowing two clients as that is the intended use of our app for now
-        while (loggedIn.size() <= 2) {
-            Socket client = server.accept();
-            ClientHandler c = new ClientHandler(client);
-            loggedIn.add(c);
-            System.out.println(loggedIn.size() +" clients logged in.");
-            if(loggedIn.size() == 2){
-                for(ClientHandler ch: loggedIn)
-                    System.out.println(ch.client.getUsername());
-                TimeUnit.SECONDS.sleep(2);
-                broadcastToAll();
-            }
+        while (true) {
+            if(loggedIn.size() <= 2) {
+                Socket client = server.accept();
+                ClientHandler c = new ClientHandler(client);
+                System.out.println((loggedIn.size()+1) + " clients logged in.");
+            }else
+                System.out.println((loggedIn.size())+" clients logged in");
         }
 
     }
@@ -52,13 +54,12 @@ public class MultiClientServer {
             if ( ! c.client.getUsername().equals(user) )
                 c.sendMessage(user,message);
     }
-    public static void broadcastToAll(){
-        System.out.println("Broadcasting to "+loggedIn.size()+" users");
-        for(int i = 0 ; i <= loggedIn.size(); i++){
-            System.out.println(loggedIn.get(i).client.getUsername());
-            loggedIn.get(i).sendMessage("start");
-        }
+    public static void broadcast1(String user, String message)  {
+        for ( ClientHandler c : loggedIn )
+            if ( ! c.client.getUsername().equals(user) )
+                c.sendMessage1(message);
     }
+
     /**
      *
      * @param args

@@ -1,7 +1,7 @@
 package Clients;
 
 import Authentication.DiffieHellman;
-import Authentication.*;
+import Authentication.MutAuthData;
 
 import javax.swing.*;
 import java.awt.*;
@@ -9,52 +9,40 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
-import java.util.concurrent.TimeUnit;
 
 public class Client extends JFrame implements ActionListener {
-    private String uname;
-    private PrintWriter pw;
-    private BufferedReader br;
-    private JTextArea  taMessages;
-    private JTextField tfInput;
-    private JButton btnSend,btnExit;
-    private Socket client;
-    private DiffieHellman dh = new DiffieHellman();
-    private MutAuthData mydataObject;
-    private MutAuthData theirDataObject;
+    String uname;
+    ObjectOutputStream oos;
+    ObjectInputStream ois;
+    PrintWriter pw;
+    BufferedReader br;
+    JTextArea  taMessages;
+    JTextField tfInput;
+    JButton btnSend,btnExit;
+    Socket client;
+    DiffieHellman dh = new DiffieHellman();
+    MutAuthData mydataObject;
+    MutAuthData theirDataObject;
+    DataTransfer dataObject;
     static int wait = 0;
 
     public Client(String uname, String password, String serverName) throws Exception {
         super(uname);
+        this.uname = uname;
         client = new Socket(serverName, 3000);
-        br = new BufferedReader(new InputStreamReader(client.getInputStream()));
-        pw = new PrintWriter(client.getOutputStream(), true);
+        oos = new ObjectOutputStream(client.getOutputStream());
+        ois = new ObjectInputStream(client.getInputStream());
 
-        System.out.println(" Welcome to SecureChat");
 
-        System.out.println("Authenticating to server");
-        //-----------------Clients to server authentication------------------------------//
-        //send username and password to the client handler
-        pw.println(uname);
-        pw.println(password);
-        new MessagesThread().start();//needs to be encrypted
-        buildInterface();
-        //wait until both users are logged in
-        while(wait < 3){
-            pw.println("start");
-            TimeUnit.SECONDS.sleep(2);
-            if(wait >= 1)
-                wait++;
-        }
+        //get authentication data
+        mydataObject = dh.DHPubKeyGenerator();
+        dataObject = new DataTransfer(uname, dh.CryptoSecureRand(), mydataObject.getDhPublicKey());
+        oos.writeObject(dataObject);
         //-----------------Symmetric key creation and distribution----------------------//
-        taMessages.append("Starting encryption" + "\n");
         //-----------------generating public mutual authentication info-----------------//
-        taMessages.append("Starting mutual Authentication" + "\n");
-        //mydataObject = dh.DHKeyGenerator(theirDataObject.getDhPublicKey());
+        //mydataObject = dh.DHPubKeyGenerator(mydataObject.getDhPublicKey())DataObject.getDhPublicKey());
         //mydataObject.setTheirNonce(theirDataObject.getTheirNonce() + 1);
         //-----------------receiving public mutual authentication info -----------------///
         //-----------------sending public mutual authentication info -------------------///
@@ -66,6 +54,17 @@ public class Client extends JFrame implements ActionListener {
         //-----------------if authenticated, build out messenger interface -------------//
 
         //}
+
+        //now get the rest
+        br = new BufferedReader(new InputStreamReader(client.getInputStream()));
+        pw = new PrintWriter(client.getOutputStream(), true);
+        pw.println(uname);
+        pw.println(password);
+
+
+        new MessagesThread().start();//needs to be encrypted
+        buildInterface();
+
     }
     public static void main(String ... args) {
         //take username from user
@@ -79,6 +78,7 @@ public class Client extends JFrame implements ActionListener {
         try {
             new Client( name, password, serverName);
         } catch(Exception ex) {
+            ex.printStackTrace();
             System.out.println( "Error in main of client--> " + ex.getMessage());
             System.exit(1);
         }
@@ -93,6 +93,7 @@ public class Client extends JFrame implements ActionListener {
             tfInput.setText("");
         }
     }
+
     public void buildInterface() {
         btnSend = new JButton("Send");
         btnExit = new JButton("Exit");

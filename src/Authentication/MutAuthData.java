@@ -1,9 +1,8 @@
 package Authentication;
 
 import javax.crypto.KeyAgreement;
-import java.io.Serializable;
 
-public class MutAuthData implements Serializable {
+public class MutAuthData{
 
     private String username;
     private Long myNonce;

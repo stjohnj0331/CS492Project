@@ -1,5 +1,8 @@
 package Server;
 
+import Authentication.MutAuthData;
+import Clients.DataTransfer;
+
 import java.io.*;
 import java.net.Socket;
 import java.time.LocalDateTime;
@@ -10,13 +13,15 @@ class ClientHandler extends Thread {
     private BufferedReader input;
     InputStream is;
     OutputStream os;
-    ObjectInputStream ois;
     ObjectOutputStream oos;
+    ObjectInputStream ois;
     private FileWriter logs;
     private File logsPath = new File("src/Server/logs.txt");
     private LocalDateTime time = LocalDateTime.now();
     private Socket clientSocket;
+    DataTransfer dataObject;
     Client client;
+    MutAuthData myObject;
     MultiClientServer server = new MultiClientServer();
 
     public ClientHandler(Socket socket) {
@@ -37,9 +42,17 @@ class ClientHandler extends Thread {
             os = clientSocket.getOutputStream();
             output = new PrintWriter(os, true);
             input = new BufferedReader(new InputStreamReader(is));
+            oos = new ObjectOutputStream(os);
+            ois = new ObjectInputStream(is);
             client.setIpAddress(clientSocket.getInetAddress().toString());
             logs = new FileWriter(logsPath,true);
             try {
+
+                dataObject = new DataTransfer();
+                dataObject = (DataTransfer) ois.readObject();
+                System.out.println("reading from object"+dataObject.getUsername());
+
+
                 boolean loginAttempt = login();
 
                 if (loginAttempt) {//verifying to the server, hashed username and password

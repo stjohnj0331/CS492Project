@@ -1,5 +1,7 @@
 package Server;
 
+import Clients.DataTransfer;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -40,26 +42,7 @@ public class MultiClientServer {
             }else
                 System.out.println((loggedIn.size())+" clients logged in");
         }
-
     }
-
-    /**
-     * Server uses this method to send a message to the username passed
-     * client must be listening with an open message thread to get this message
-     * @param user
-     * @param message
-     */
-    public static void broadcast(String user, String message)  {
-        for ( ClientHandler c : loggedIn )
-            if ( ! c.client.getUsername().equals(user) )
-                c.sendMessage(user,message);
-    }
-    public static void broadcast1(String user, String message)  {
-        for ( ClientHandler c : loggedIn )
-            if ( ! c.client.getUsername().equals(user) )
-                c.sendMessage1(message);
-    }
-
     /**
      *
      * @param args
@@ -73,4 +56,23 @@ public class MultiClientServer {
             System.exit(1);
         }
     }
+    /**
+     * Server uses this method to send a message to the username passed
+     * client must be listening with an open message thread to get this message
+     * @param user
+     */
+    public static void broadcast(String user, DataTransfer object) throws IOException {
+        System.out.println("int the broadcast method");
+        for ( ClientHandler c : loggedIn )
+            if ( ! c.client.getUsername().equals(user) ) {
+                c.sendObject(user, object);
+            }
+    }
+
+
+
+
+
+
+
 }

@@ -1,18 +1,48 @@
 package Clients;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 public class DataTransfer implements Serializable {
     String username;
+    String password;
     Long nonce;
     byte[] dhPubKey;
+    String message;
+    int state;
+    boolean read;
 
     public DataTransfer(){}
 
-    public DataTransfer(String username, Long nonce, byte[] dhPubKey) {
+    public DataTransfer(String username, Long nonce, byte[] dhPubKey, int state) {
         this.username = username;
         this.nonce = nonce;
         this.dhPubKey = dhPubKey;
+        this.state = state;
+    }
+
+    public boolean isRead() {
+        return read;
+    }
+
+    public void setRead(boolean read) {
+        this.read = read;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public int getState() {
+        return state;
+    }
+
+    public void setState(int state) {
+        this.state = state;
     }
 
     public String getUsername() {
@@ -21,6 +51,14 @@ public class DataTransfer implements Serializable {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public Long getNonce() {
@@ -38,4 +76,28 @@ public class DataTransfer implements Serializable {
     public void setDhPubKey(byte[] dhPubKey) {
         this.dhPubKey = dhPubKey;
     }
+
+    public void reset(){
+         username = null;
+         password = null;
+         nonce = null;
+         dhPubKey = null;
+         message = null;
+         state = 0;
+         read = false;
+    }
+
+    @Override
+    public String toString() {
+        return "DataTransfer{" +
+                "username='" + username + '\'' +
+                ", password='" + password + '\'' +
+                ", nonce=" + nonce +
+                ", dhPubKey=" + Arrays.toString(dhPubKey) +
+                ", message='" + message + '\'' +
+                ", state=" + state +
+                '}';
+    }
 }
+
+

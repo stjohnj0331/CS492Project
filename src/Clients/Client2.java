@@ -1,7 +1,7 @@
 package Clients;
 
 import Authentication.DiffieHellman;
-import Authentication.*;
+import Authentication.MutAuthData;
 
 import javax.swing.*;
 import java.awt.*;
@@ -9,51 +9,38 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
-import java.util.concurrent.TimeUnit;
 
 public class Client2 extends JFrame implements ActionListener {
-    private String uname;
-    private PrintWriter pw;
-    private BufferedReader br;
-    private JTextArea  taMessages;
-    private JTextField tfInput;
-    private JButton btnSend,btnExit;
-    private Socket client;
-    private DiffieHellman dh = new DiffieHellman();
-    private MutAuthData mydataObject;
-    private MutAuthData theirDataObject;
+    private static String uname;
+    ObjectOutputStream oos;
+    ObjectInputStream ois;
+    JTextArea  taMessages;
+    JTextField tfInput;
+    JButton btnSend,btnExit;
+    Socket client;
+    static DiffieHellman dh = new DiffieHellman();
+    static MutAuthData mydataObject;
+    static DataTransfer dataObject = new DataTransfer();
+    static DataTransfer theirDataObject = new DataTransfer();
     static int wait = 0;
 
     public Client2(String uname, String password, String serverName) throws Exception {
         super(uname);
+        this.uname = uname;
         client = new Socket(serverName, 3000);
-        br = new BufferedReader(new InputStreamReader(client.getInputStream()));
-        pw = new PrintWriter(client.getOutputStream(), true);
+        oos = new ObjectOutputStream(client.getOutputStream());
+        ois = new ObjectInputStream(client.getInputStream());
 
-        System.out.println(" Welcome to SecureChat");
+        oos.writeObject(dataObject);
+        oos.reset();
+        //get authentication data
 
-        System.out.println("Authenticating to server");
-        //-----------------Clients to server authentication------------------------------//
-        //send username and password to the client handler
-        pw.println(uname);
-        pw.println(password);
-        new MessagesThread().start();//needs to be encrypted
-        buildInterface();
-        //wait until both users are logged in
-        while(wait < 1){
-            pw.println("start");
-            TimeUnit.SECONDS.sleep(2);
-        }
 
         //-----------------Symmetric key creation and distribution----------------------//
-        taMessages.append("Starting encryption" + "\n");
         //-----------------generating public mutual authentication info-----------------//
-        taMessages.append("Starting mutual Authentication" + "\n");
-        //mydataObject = dh.DHKeyGenerator(theirDataObject.getDhPublicKey());
+        //mydataObject = dh.DHPubKeyGenerator(mydataObject.getDhPublicKey())DataObject.getDhPublicKey());
         //mydataObject.setTheirNonce(theirDataObject.getTheirNonce() + 1);
         //-----------------receiving public mutual authentication info -----------------///
         //-----------------sending public mutual authentication info -------------------///
@@ -65,19 +52,28 @@ public class Client2 extends JFrame implements ActionListener {
         //-----------------if authenticated, build out messenger interface -------------//
 
         //}
+
+        //at this point only messages should be going across the sockets
+        new MessagesThread().start();//needs to be encrypted
+        buildInterface();
+
     }
-    public static void main(String ... args) {
+    public static void main(String ... args) throws Exception {
+        mydataObject = dh.DHPubKeyGenerator();
+        dataObject = new DataTransfer(uname, dh.CryptoSecureRand(), mydataObject.getDhPublicKey(), 1);
         //take username from user
-        String name = JOptionPane.showInputDialog(null,"Enter your username :", "Login",
-                JOptionPane.PLAIN_MESSAGE);
+        dataObject.setUsername(JOptionPane.showInputDialog(null,"Enter your username :", "Login",
+                JOptionPane.PLAIN_MESSAGE));
         //take password from user
-        String password = JOptionPane.showInputDialog(null,"Enter your password :", "Password",
-                JOptionPane.PLAIN_MESSAGE);
+        dataObject.setPassword(JOptionPane.showInputDialog(null,"Enter your password :", "Password",
+                JOptionPane.PLAIN_MESSAGE));
         String serverName = "192.168.1.10";
         //create new client
         try {
-            new Client2( name, password, serverName);
+            new Client2(dataObject.getUsername(), dataObject.getPassword(), serverName);
+
         } catch(Exception ex) {
+            ex.printStackTrace();
             System.out.println( "Error in main of client--> " + ex.getMessage());
             System.exit(1);
         }
@@ -85,13 +81,30 @@ public class Client2 extends JFrame implements ActionListener {
 
     public void actionPerformed(ActionEvent evt) {
         if ( evt.getSource() == btnExit ) {
-            pw.println("end");  // send end to server so that server knows to terminate connection
-            System.exit(0);
+            dataObject.setState(3);  // send end to server so that server knows to terminate connection
+            try {
+                System.out.println("logging out");
+                //System.out.println(dataObject.toString());
+                oos.writeObject(dataObject);
+                oos.reset();
+                System.exit(0);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         } if(evt.getSource() == btnSend) {
-            pw.println(tfInput.getText());// sends message to clientHandler by printing to outputStream
+            dataObject.setState(4);
+            dataObject.setMessage(tfInput.getText());// sends message to clientHandler by printing to outputStream
+            try {
+                oos.writeObject(dataObject);
+                oos.reset();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             tfInput.setText("");
+            taMessages.append(uname+": "+dataObject.getMessage()+"\n");
         }
     }
+
     public void buildInterface() {
         btnSend = new JButton("Send");
         btnExit = new JButton("Exit");
@@ -104,8 +117,16 @@ public class Client2 extends JFrame implements ActionListener {
             @Override
             public void keyPressed(KeyEvent e) {
                 if(e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    pw.println(tfInput.getText());
+                    dataObject.setState(4);
+                    dataObject.setMessage(tfInput.getText());// sends message to clientHandler by printing to outputStream
+                    try {
+                        oos.writeObject(dataObject);
+                        oos.reset();
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
                     tfInput.setText("");
+                    taMessages.append(uname+": "+dataObject.getMessage()+"\n");
                 }
             }
         });
@@ -136,12 +157,8 @@ public class Client2 extends JFrame implements ActionListener {
             String line;
             try {
                 while(true) {
-                    line = br.readLine();
-                    if(line.equals("start")&&(wait == 0)) {
-                        System.out.println("response received");
-                        wait++;
-                    }if(wait >= 1)
-                        taMessages.append(line + "\n");
+                    theirDataObject = (DataTransfer) ois.readObject();
+                    taMessages.append(theirDataObject.getMessage()+ "\n");
                 } // end of while
             } catch(Exception ex) {ex.getMessage();}
         }

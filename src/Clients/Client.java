@@ -13,19 +13,17 @@ import java.io.*;
 import java.net.Socket;
 
 public class Client extends JFrame implements ActionListener {
-    String uname;
+    private static String uname;
     ObjectOutputStream oos;
     ObjectInputStream ois;
-    PrintWriter pw;
-    BufferedReader br;
     JTextArea  taMessages;
     JTextField tfInput;
     JButton btnSend,btnExit;
     Socket client;
-    DiffieHellman dh = new DiffieHellman();
-    MutAuthData mydataObject;
-    MutAuthData theirDataObject;
-    DataTransfer dataObject;
+    static DiffieHellman dh = new DiffieHellman();
+    static MutAuthData mydataObject;
+    static DataTransfer dataObject = new DataTransfer();
+    static DataTransfer theirDataObject = new DataTransfer();
     static int wait = 0;
 
     public Client(String uname, String password, String serverName) throws Exception {
@@ -35,11 +33,11 @@ public class Client extends JFrame implements ActionListener {
         oos = new ObjectOutputStream(client.getOutputStream());
         ois = new ObjectInputStream(client.getInputStream());
 
-
-        //get authentication data
-        mydataObject = dh.DHPubKeyGenerator();
-        dataObject = new DataTransfer(uname, dh.CryptoSecureRand(), mydataObject.getDhPublicKey());
         oos.writeObject(dataObject);
+        oos.reset();
+        //get authentication data
+
+
         //-----------------Symmetric key creation and distribution----------------------//
         //-----------------generating public mutual authentication info-----------------//
         //mydataObject = dh.DHPubKeyGenerator(mydataObject.getDhPublicKey())DataObject.getDhPublicKey());
@@ -55,28 +53,25 @@ public class Client extends JFrame implements ActionListener {
 
         //}
 
-        //now get the rest
-        br = new BufferedReader(new InputStreamReader(client.getInputStream()));
-        pw = new PrintWriter(client.getOutputStream(), true);
-        pw.println(uname);
-        pw.println(password);
-
-
+        //at this point only messages should be going across the sockets
         new MessagesThread().start();//needs to be encrypted
         buildInterface();
 
     }
-    public static void main(String ... args) {
+    public static void main(String ... args) throws Exception {
+        mydataObject = dh.DHPubKeyGenerator();
+        dataObject = new DataTransfer(uname, dh.CryptoSecureRand(), mydataObject.getDhPublicKey(), 1);
         //take username from user
-        String name = JOptionPane.showInputDialog(null,"Enter your username :", "Login",
-                JOptionPane.PLAIN_MESSAGE);
+        dataObject.setUsername(JOptionPane.showInputDialog(null,"Enter your username :", "Login",
+                JOptionPane.PLAIN_MESSAGE));
         //take password from user
-        String password = JOptionPane.showInputDialog(null,"Enter your password :", "Password",
-                JOptionPane.PLAIN_MESSAGE);
+        dataObject.setPassword(JOptionPane.showInputDialog(null,"Enter your password :", "Password",
+                JOptionPane.PLAIN_MESSAGE));
         String serverName = "192.168.1.10";
         //create new client
         try {
-            new Client( name, password, serverName);
+            new Client(dataObject.getUsername(), dataObject.getPassword(), serverName);
+
         } catch(Exception ex) {
             ex.printStackTrace();
             System.out.println( "Error in main of client--> " + ex.getMessage());
@@ -86,11 +81,27 @@ public class Client extends JFrame implements ActionListener {
 
     public void actionPerformed(ActionEvent evt) {
         if ( evt.getSource() == btnExit ) {
-            pw.println("end");  // send end to server so that server knows to terminate connection
-            System.exit(0);
+            dataObject.setState(3);  // send end to server so that server knows to terminate connection
+            try {
+                System.out.println("logging out");
+                //System.out.println(dataObject.toString());
+                oos.writeObject(dataObject);
+                oos.reset();
+                System.exit(0);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         } if(evt.getSource() == btnSend) {
-            pw.println(tfInput.getText());// sends message to clientHandler by printing to outputStream
+            dataObject.setState(4);
+            dataObject.setMessage(tfInput.getText());// sends message to clientHandler by printing to outputStream
+            try {
+                oos.writeObject(dataObject);
+                oos.reset();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             tfInput.setText("");
+            taMessages.append(uname+": "+dataObject.getMessage()+"\n");
         }
     }
 
@@ -106,8 +117,16 @@ public class Client extends JFrame implements ActionListener {
             @Override
             public void keyPressed(KeyEvent e) {
                 if(e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    pw.println(tfInput.getText());
+                    dataObject.setState(4);
+                    dataObject.setMessage(tfInput.getText());// sends message to clientHandler by printing to outputStream
+                    try {
+                        oos.writeObject(dataObject);
+                        oos.reset();
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
                     tfInput.setText("");
+                    taMessages.append(uname+": "+dataObject.getMessage()+"\n");
                 }
             }
         });
@@ -138,12 +157,8 @@ public class Client extends JFrame implements ActionListener {
             String line;
             try {
                 while(true) {
-                    line = br.readLine();
-                    if(line.equals("start")&&(wait == 0)) {
-                        System.out.println("response received");
-                        wait++;
-                    }if(wait >= 1)
-                        taMessages.append(line + "\n");
+                    theirDataObject = (DataTransfer) ois.readObject();
+                    taMessages.append(theirDataObject.getMessage()+ "\n");
                 } // end of while
             } catch(Exception ex) {ex.getMessage();}
         }

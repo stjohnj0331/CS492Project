@@ -9,8 +9,6 @@ import java.time.LocalDateTime;
 import java.util.Scanner;
 
 class ClientHandler extends Thread {
-    private PrintWriter output;
-    private BufferedReader input;
     InputStream is;
     OutputStream os;
     ObjectOutputStream oos;
@@ -23,6 +21,7 @@ class ClientHandler extends Thread {
     Client client;
     MutAuthData myObject;
     MultiClientServer server = new MultiClientServer();
+    boolean loginAttempt;
 
     public ClientHandler(Socket socket) {
         this.clientSocket = socket;
@@ -34,96 +33,86 @@ class ClientHandler extends Thread {
      *  validates clients created by MultiClientServer by checking login info, number of clients connected
      *  and writes to both the server logs and server terminal logins/logouts and attempted logins.
      *  Gathers all of the data required for mutual authentication, perfect forward security, and symmetric
-     *  key encryption
+     *  key encryption.
      */
     @Override public void run() {
         try {
             is = clientSocket.getInputStream();
             os = clientSocket.getOutputStream();
-            output = new PrintWriter(os, true);
-            input = new BufferedReader(new InputStreamReader(is));
             oos = new ObjectOutputStream(os);
             ois = new ObjectInputStream(is);
             client.setIpAddress(clientSocket.getInetAddress().toString());
-            logs = new FileWriter(logsPath,true);
+            logs = new FileWriter(logsPath, true);
             try {
-
                 dataObject = new DataTransfer();
                 dataObject = (DataTransfer) ois.readObject();
-                System.out.println("reading from object"+dataObject.getUsername());
-
-
-                boolean loginAttempt = login();
-
+                if (dataObject.getState() == 1) {//login()
+                    System.out.println("login packet");
+                    loginAttempt = login(dataObject);
+                }
                 if (loginAttempt) {//verifying to the server, hashed username and password
-
-                    //-----------------messaging loop begins-------------------//
-                    //output.println(" Welcome to SecureChat");
+                    System.out.println("Login successful");
                     //to the server terminal
                     System.out.println(client.getIpAddress() + " logged in @ " + time);
                     //to the logs
-                    logs.write("\n"+client.getIpAddress() + " logged in @ " + time);
-                    flush();
-                    try {
-                        String inputLine;
-                        while ((inputLine = input.readLine()) != null) {
-                            if (inputLine.equals("end")) {
-                                MultiClientServer.decreaseClientCount();
-                                MultiClientServer.removeUser(this.client.getUsername());
+                    logs.write("\n" + client.getIpAddress() + " logged in @ " + time);
+                    logs.flush();
+                    //-----------------messaging/data transfer loop begins-------------------//
+                    while (dataObject.getState() != 3) {
+                        dataObject = (DataTransfer) ois.readObject();
+                        System.out.println(dataObject.toString());//good to hear
+                        //get in object check its state
+                        if (dataObject.getState() == 2) {//mutAuth/PFS - needs to be broadcast
+                            System.out.println("this is mutAuth/PFS");
+                            MultiClientServer.broadcast(dataObject.getUsername(), dataObject);
+                        }
+                        if (dataObject.getState() == 4) {//message - needs to be broadcast
+                            System.out.println("broadcasting message");
+                            MultiClientServer.broadcast(dataObject.getUsername(), dataObject);
+                        }
+                    }
+                    //-----------------messaging/data transfer loop ends--------------------//
+
+                    if (dataObject.getState() == 3) {//logout
+                        System.out.println("logging out");
+                        for (int i = 0; i < 2; i++)
+                            if ((!MultiClientServer.loggedIn.isEmpty()) && i < MultiClientServer.getClientCount() &&
+                                    MultiClientServer.loggedIn.get(i).client.getUsername().equals(client.getUsername())) {
+                                MultiClientServer.loggedIn.remove(i);
                                 System.out.println(client.getIpAddress() + " logged out @ " + time);
                                 logs.write("\n" + client.getIpAddress() + " logged out @ " + time);
-                                flush();
-                                break;
-                            }else {
-                                if(inputLine.equals("start")){
-                                    MultiClientServer.broadcast1(client.getUsername(), inputLine);
-                                }else {
-                                    MultiClientServer.broadcast(client.getUsername(), inputLine);//sends message to server
-                                    sendMessage("Me: ", inputLine);//prints message to this users chatbox
-                                }
-                                flush();
+                                logs.flush();
                             }
-                        }
-                        //-----------------messaging loop end-------------------//
-                    }catch(Exception e){
-                        MultiClientServer.decreaseClientCount();
-                        e.getMessage();
+                        System.out.println("closing socket");
+                        ois.close();
+                        oos.close();
+                        clientSocket.close();
                     }
-                } else {//for failed login
-                    output.println(" login attempt failed");
+                } else{//for failed login
                     failed();
                 }
-                /*
-                   for exceptions caused by login attempts. I want to ensure the connection is dropped if a hack
-                   is attempted that causes any exceptions, sort of a redundancy.
-                */
-            } catch (Exception e) {
-                System.out.println("Error in client handler--> " + e.getMessage());
+            } catch(Exception e) {
+                System.out.println("Error in outer try of client handler\\login attempt");
                 e.printStackTrace();
-                failed();
             }
-            input.close();
-            output.close();
-            clientSocket.close();
-        }catch(Exception e){
-            e.getMessage();
+        }catch(Exception ex){
+            System.out.println("error in outer try of client handler");
+            ex.printStackTrace();
+            System.exit(1);
         }
     }
 
-    public void sendMessage1(String msg){output.println(msg);}
-    public void sendMessage(String uname, String  msg)  { output.println( uname + ": " + msg); }
+    public void sendObject(String user, DataTransfer object) throws IOException {oos.writeObject(object);}
 
-    public boolean login()throws Exception{
-        client.setUsername(input.readLine());//sets username for client
+    public boolean login(DataTransfer dataObject)throws Exception{
+        client.setUsername(dataObject.getUsername());//sets username for client
         for(int i = 0; i < 2; i++) {
             if ((!MultiClientServer.loggedIn.isEmpty()) && i < MultiClientServer.getClientCount() &&
                     MultiClientServer.loggedIn.get(i).client.getUsername().equals(client.getUsername())){
-                output.println("user already logged in");
                 return false;
             }
         }
-        String password = input.readLine();
-        long hashedLogin = Long.parseLong(password);
+        long hashedLogin = Long.parseLong(dataObject.getPassword());
         if(checkCredentials(hashedLogin, client.getUsername())) {
             MultiClientServer.loggedIn.add(this);
             MultiClientServer.increaseClientCount();
@@ -155,7 +144,7 @@ class ClientHandler extends Thread {
     public void flush(){
         try {
             logs.flush();
-            output.flush();
+            oos.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -163,7 +152,7 @@ class ClientHandler extends Thread {
 
     public void failed(){
         try {
-            System.out.println(client.getIpAddress() + " attempted login @ " + time);
+            System.out.println("login failed" +client.getIpAddress() + " attempted login @ " + time);
             logs.write("\n"+client.getIpAddress() + " attempted login @ " + time);
             server.decreaseClientCount();
             clientSocket.close();

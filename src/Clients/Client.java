@@ -2,6 +2,7 @@ package Clients;
 
 import Authentication.DiffieHellman;
 import Authentication.MutAuthData;
+import Encryption.AES2;
 
 import javax.swing.*;
 import java.awt.*;
@@ -9,8 +10,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.io.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.Base64;
 
 public class Client extends JFrame implements ActionListener {
     private static String uname;
@@ -20,13 +24,16 @@ public class Client extends JFrame implements ActionListener {
     JTextField tfInput;
     JButton btnSend,btnExit;
     Socket client;
+    String sessionKey;
     static DiffieHellman dh = new DiffieHellman();
-    static MutAuthData mydataObject;
+    AES2 aes = new AES2();
+    static MutAuthData mydataObject = new MutAuthData();
     static DataTransfer dataObject = new DataTransfer();
     static DataTransfer theirDataObject = new DataTransfer();
 
     public Client(String uname,String password, String serverName) throws Exception {
         super(uname);
+        this.uname = uname;
         client = new Socket(serverName, 3000);
         oos = new ObjectOutputStream(client.getOutputStream());
         ois = new ObjectInputStream(client.getInputStream());
@@ -38,8 +45,12 @@ public class Client extends JFrame implements ActionListener {
         //start the auth data and message data thread
         new MessagesThread().start();
 
+        //start encryption here
+
+
+
         //ALice starts the mutual authentication handshake with initial information
-        mydataObject = dh.DHPubKeyGenerator();//public key
+        mydataObject = dh.DHAlicePubKeyGenerator();//public key
         dataObject.setDhPubKey(mydataObject.getDhPublicKey());
         dataObject.setNonce(mydataObject.getMyNonce());
         dataObject.setUsername(uname);
@@ -53,7 +64,6 @@ public class Client extends JFrame implements ActionListener {
     }
 
     public static void main(String ... args) throws Exception {
-        mydataObject = dh.DHPubKeyGenerator();
         dataObject = new DataTransfer(1);
         //take username from user
         dataObject.setUsername(JOptionPane.showInputDialog(null,"Enter your username :", "Login",
@@ -79,24 +89,20 @@ public class Client extends JFrame implements ActionListener {
             dataObject.setState(3);  // send end to server so that server knows to terminate connection
             try {
                 System.out.println("logging out");
-                //System.out.println(dataObject.toString());
                 oos.writeObject(dataObject);
                 oos.reset();
+                mydataObject.deleteData();
+                dataObject.reset();
                 System.exit(0);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         } if(evt.getSource() == btnSend) {
-            dataObject.setState(4);
-            dataObject.setMessage(tfInput.getText());// sends message to clientHandler by printing to outputStream
             try {
-                oos.writeObject(dataObject);
-                oos.reset();
-            } catch (IOException e) {
+                sendMessage();
+            } catch (Exception e) {
                 e.printStackTrace();
             }
-            tfInput.setText("");
-            taMessages.append(uname+": "+dataObject.getMessage()+"\n");
         }
     }
 
@@ -112,16 +118,11 @@ public class Client extends JFrame implements ActionListener {
             @Override
             public void keyPressed(KeyEvent e) {
                 if(e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    dataObject.setState(4);
-                    dataObject.setMessage(tfInput.getText());// sends message to clientHandler by printing to outputStream
                     try {
-                        oos.writeObject(dataObject);
-                        oos.reset();
-                    } catch (IOException ex) {
-                        ex.printStackTrace();
+                        sendMessage();
+                    } catch (Exception exception) {
+                        exception.printStackTrace();
                     }
-                    tfInput.setText("");
-                    taMessages.append(uname+": "+dataObject.getMessage()+"\n");
                 }
             }
         });
@@ -146,7 +147,26 @@ public class Client extends JFrame implements ActionListener {
         pack();
     }
 
-    // sends received messages to the chatbox
+    public void sendMessage() throws Exception {
+
+        //Encrypting---------------------
+        dataObject.setState(4);
+        String line = tfInput.getText();
+        dataObject.setEncryptedPayload(aes.encrypt(line,  "1234"));// sends message to clientHandler by printing to outputStream
+        //dataObject.setMessage(tfInput.getText());// prints
+        //encrypting------------------------
+
+        try {
+            oos.writeObject(dataObject);
+            oos.reset();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+        taMessages.append(uname+": "+line+"\n");
+        tfInput.setText("");
+    }
+
+    // sends received messages to the chat box
     class MessagesThread extends Thread {
         public void run() {
             int count = 0;
@@ -154,8 +174,18 @@ public class Client extends JFrame implements ActionListener {
                 while(true) {
                     theirDataObject = (DataTransfer) ois.readObject();
                     if(theirDataObject.getState() == 4) {
+
+
+                        //decrypting---------------------------------------
+                        String plaintext = aes.decrypt(theirDataObject.getEncryptedPayload(), "1234");
                         taMessages.append(theirDataObject.getUsername()+":"
-                                +theirDataObject.getMessage() + "\n");
+                                + plaintext + "\n");
+
+                        //taMessages.append(theirDataObject.getUsername()+":"
+                        //+theirDataObject.getMessage() + "\n");
+                        //decrypting---------------------------------------
+
+
                     }else if(theirDataObject.getState() == 2){
                         mutualAuth(theirDataObject);
                     }
@@ -172,12 +202,43 @@ public class Client extends JFrame implements ActionListener {
         if(newNonce == theirDataObject.getTheirNonce()){
             System.out.println("Alice has verified bob");
             //generate private key
-            mydataObject.setDhPrivateKey(dh.DHPrivKey(mydataObject.getKeyAgree(), mydataObject.getDhPublicKey()));
+            mydataObject.setDhPrivateKey(dh.DHPrivKey(mydataObject.getKeyAgree(), theirDataObject.getDhPubKey()));
+
+
+            String sessionKey = Base64.getEncoder().encodeToString(mydataObject.getDhPrivateKey());
+            sessionKey += (mydataObject.getMyNonce()+1) + (theirDataObject.getNonce()+1) +
+                    uname + theirDataObject.getUsername();
+
         }
         dataObject.setTheirNonce(theirDataObject.getNonce()+1);
         //alice sends bob's nonce back
+
         oos.writeObject(dataObject);
         oos.reset();
+    }
+
+    private static void byte2hex(byte b, StringBuffer buf) {
+        char[] hexChars = { '0', '1', '2', '3', '4', '5', '6', '7', '8',
+                '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+        int high = ((b & 0xf0) >> 4);
+        int low = (b & 0x0f);
+        buf.append(hexChars[high]);
+        buf.append(hexChars[low]);
+    }
+
+    /*
+     * Converts a byte array to hex string
+     */
+    private static String toHexString(byte[] block) {
+        StringBuffer buf = new StringBuffer();
+        int len = block.length;
+        for (int i = 0; i < len; i++) {
+            byte2hex(block[i], buf);
+            if (i < len-1) {
+                buf.append(":");
+            }
+        }
+        return buf.toString();
     }
 }
 

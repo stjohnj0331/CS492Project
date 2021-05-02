@@ -17,6 +17,10 @@ public class MutAuthData{
         myNonce = dh.CryptoSecureRand();
     }
 
+    public MutAuthData() {
+
+    }
+
     public String getUsername() {
         return username;
     }
@@ -51,9 +55,8 @@ public class MutAuthData{
     public Long getMyNonce(){return myNonce;}
 
     public void deleteData(){
-        username = " ";
         myNonce = (long)0;
         dhPublicKey = null;
-        dhPrivateKey = null;
+        //dhPrivateKey = null;
     }
 }

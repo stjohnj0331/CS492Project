@@ -8,6 +8,8 @@ import java.security.spec.X509EncodedKeySpec;
 
 public class DiffieHellman {
 
+    static KeyAgreement aliceKeyAgree;
+
     /*
      * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
      *
@@ -51,15 +53,20 @@ public class DiffieHellman {
      * @return
      * @throws Exception
      */
-    public MutAuthData DHPubKeyGenerator() throws Exception {
-        KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("DH");
-        keyPairGen.initialize(2048);
-        KeyPair DHkeyPair = keyPairGen.generateKeyPair();
+    public MutAuthData DHAlicePubKeyGenerator() throws Exception {
+        System.out.println("ALICE: Generate DH keypair ...");
+        KeyPairGenerator aliceKpairGen = KeyPairGenerator.getInstance("DH");
+        aliceKpairGen.initialize(1024);
+        KeyPair aliceKpair = aliceKpairGen.generateKeyPair();
 
-        // User creates and initializes their DH KeyAgreement object
-        KeyAgreement DHKeyAgree = KeyAgreement.getInstance("DH");
-        DHKeyAgree.init(DHkeyPair.getPrivate());
-        return new MutAuthData(DHkeyPair.getPublic().getEncoded(), DHKeyAgree);
+        // Alice creates and initializes her DH KeyAgreement object
+        System.out.println("ALICE: Initialization ...");
+        aliceKeyAgree = KeyAgreement.getInstance("DH");
+        aliceKeyAgree.init(aliceKpair.getPrivate());
+
+        // Alice encodes her public key, and sends it over to Bob.
+        byte[] alicePubKeyEnc = aliceKpair.getPublic().getEncoded();
+        return new MutAuthData(alicePubKeyEnc, aliceKeyAgree);
     }
 
     //second key to be generated
@@ -67,28 +74,41 @@ public class DiffieHellman {
 
     /**
      *
-     * @param DHInitPubKeyEnc
+     * @param alicePubKeyEnc
      * @return
      * @throws Exception
      */
-    public MutAuthData DHPubKeyGenerator(byte[] DHInitPubKeyEnc) throws Exception {
-        KeyFactory KeyFac = KeyFactory.getInstance("DH");
-        X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(DHInitPubKeyEnc);
-        PublicKey initPubKey = KeyFac.generatePublic(x509KeySpec);
-        DHParameterSpec dhParamFromInitPubKey = ((DHPublicKey)initPubKey).getParams();
+    public MutAuthData DHBobPubKeyGenerator(byte[] alicePubKeyEnc) throws Exception {
+        KeyFactory bobKeyFac = KeyFactory.getInstance("DH");
+        X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(alicePubKeyEnc);
 
-        // User creates their own DH key pair
-        KeyPairGenerator derivedKeyPairGen = KeyPairGenerator.getInstance("DH");
-        derivedKeyPairGen.initialize(dhParamFromInitPubKey);
-        KeyPair derivedKeyPair = derivedKeyPairGen.generateKeyPair();
+        PublicKey alicePubKey = bobKeyFac.generatePublic(x509KeySpec);
 
-        // User creates and initializes their owen DH KeyAgreement object
-        KeyAgreement derivedDHKeyAgree = KeyAgreement.getInstance("DH");
-        derivedDHKeyAgree.init(derivedKeyPair.getPrivate());
+        /*
+         * Bob gets the DH parameters associated with Alice's public key.
+         * He must use the same parameters when he generates his own key
+         * pair.
+         */
+        DHParameterSpec dhParamFromAlicePubKey = ((DHPublicKey)alicePubKey).getParams();
 
-        return new MutAuthData(derivedKeyPair.getPublic().getEncoded(), derivedDHKeyAgree );
+        // Bob creates his own DH key pair
+        System.out.println("BOB: Generate DH keypair ...");
+        KeyPairGenerator bobKpairGen = KeyPairGenerator.getInstance("DH");
+        bobKpairGen.initialize(dhParamFromAlicePubKey);
+        KeyPair bobKpair = bobKpairGen.generateKeyPair();
+
+        // Bob creates and initializes his DH KeyAgreement object
+        System.out.println("BOB: Initialization ...");
+        KeyAgreement bobKeyAgree = KeyAgreement.getInstance("DH");
+        bobKeyAgree.init(bobKpair.getPrivate());
+
+        // Bob encodes his public key, and sends it over to Alice.
+        byte[] bobPubKeyEnc = bobKpair.getPublic().getEncoded();
+        return new MutAuthData(bobPubKeyEnc, bobKeyAgree );
 
     }
+
+
     //returns the shared secret key for PFS
     public byte[] DHPrivKey(KeyAgreement keyAgree, byte[] pubKeyEnc) throws Exception {
         KeyFactory DHPrivateKey = KeyFactory.getInstance("DH");

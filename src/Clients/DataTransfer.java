@@ -5,25 +5,43 @@ import java.util.Arrays;
 
 public class DataTransfer implements Serializable {
     String username;
-    String password;
+    int state;
+    String encryptedPayload;
+    String sessionKey;
     Long nonce;
     Long theirNonce;
     byte[] dhPubKey;
+    byte[] dhPrivKey;
     String message;
-    int state;
-    boolean read;
+    String password;
 
+    public String getSessionKey() {
+        return sessionKey;
+    }
+
+    public void setSessionKey(String sessionKey) {
+        this.sessionKey = sessionKey;
+    }
+
+    public byte[] getDhPrivKey() {
+        return dhPrivKey;
+    }
+
+    public void setDhPrivKey(byte[] dhPrivKey) {
+        this.dhPrivKey = dhPrivKey;
+    }
+
+    public String getEncryptedPayload() {
+        return encryptedPayload;
+    }
+
+    public void setEncryptedPayload(String encryptedPayload) {
+        this.encryptedPayload = encryptedPayload;
+    }
 
     public DataTransfer(){}
 
     public DataTransfer(int state){this.state = state;}
-
-    public DataTransfer(String username, Long nonce, byte[] dhPubKey, int state) {
-        this.username = username;
-        this.nonce = nonce;
-        this.dhPubKey = dhPubKey;
-        this.state = state;
-    }
 
     public Long getTheirNonce() {
         return theirNonce;
@@ -31,14 +49,6 @@ public class DataTransfer implements Serializable {
 
     public void setTheirNonce(Long theirNonce) {
         this.theirNonce = theirNonce;
-    }
-
-    public boolean isRead() {
-        return read;
-    }
-
-    public void setRead(boolean read) {
-        this.read = read;
     }
 
     public String getMessage() {
@@ -90,13 +100,12 @@ public class DataTransfer implements Serializable {
     }
 
     public void reset(){
-         username = null;
-         password = null;
-         nonce = null;
-         dhPubKey = null;
-         message = null;
-         state = 0;
-         read = false;
+        username = null;
+        nonce = null;
+        theirNonce = null;
+        dhPubKey = null;
+        dhPrivKey = null;
+        password = null;
     }
 
     @Override

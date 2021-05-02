@@ -8,6 +8,7 @@ public class Utilities {
     /**
      * currently only checks for VMware virtualization since that is what the test server runs
      * this would be expanded to check for other VM environments if it went into actual production
+     *
      * @throws IOException
      */
     public void VMCheck() throws IOException {//change to return int or boolean for VM requirement
@@ -21,8 +22,8 @@ public class Utilities {
             String line;
 
             while ((line = reader.readLine()) != null) {
-                if(line.contains("System Manufacturer"))
-                    if(line.contains("VMware"))
+                if (line.contains("System Manufacturer"))
+                    if (line.contains("VMware"))
                         System.out.println("Using a VM");//replace with boolean return
                     else
                         System.out.println("Not Using a VM");//replace with boolean return
@@ -30,9 +31,9 @@ public class Utilities {
 
             reader.close();
         } catch (Exception e) {
-            System.out.println("Error -> "+e.getMessage());
+            System.out.println("Error -> " + e.getMessage());
         }
-        try{
+        try {
             String command = "systemd-detect-virt";
 
             Process process = Runtime.getRuntime().exec(command);
@@ -42,23 +43,13 @@ public class Utilities {
             String line;
 
             while ((line = reader.readLine()) != null) {
-                    if(line.contains("vmware"))
-                        System.out.println("Using a VM");//replace with boolean return
-                    else
-                        System.out.println("Not Using a VM");//replace with boolean return
+                if (line.contains("vmware"))
+                    System.out.println("Using a VM");//replace with boolean return
+                else
+                    System.out.println("Not Using a VM");//replace with boolean return
             }
-        }catch(Exception e){
-            System.out.println("Error -> "+e.getMessage());
-        }
-    }
-    public static void increaseMem(){
-        try{
-            String command = "java -Xmx1g";
-
-            Process process = Runtime.getRuntime().exec(command);
-
-        }catch(Exception e){
-            System.out.println("Error -> "+e.getMessage());
+        } catch (Exception e) {
+            System.out.println("Error -> " + e.getMessage());
         }
     }
 }

@@ -7,18 +7,30 @@ public class DataTransfer implements Serializable {
     String username;
     String password;
     Long nonce;
+    Long theirNonce;
     byte[] dhPubKey;
     String message;
     int state;
     boolean read;
 
+
     public DataTransfer(){}
+
+    public DataTransfer(int state){this.state = state;}
 
     public DataTransfer(String username, Long nonce, byte[] dhPubKey, int state) {
         this.username = username;
         this.nonce = nonce;
         this.dhPubKey = dhPubKey;
         this.state = state;
+    }
+
+    public Long getTheirNonce() {
+        return theirNonce;
+    }
+
+    public void setTheirNonce(Long theirNonce) {
+        this.theirNonce = theirNonce;
     }
 
     public boolean isRead() {

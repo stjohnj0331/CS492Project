@@ -38,9 +38,7 @@ public class MultiClientServer {
             if(loggedIn.size() <= 2) {
                 Socket client = server.accept();
                 ClientHandler c = new ClientHandler(client);
-                System.out.println((loggedIn.size()+1) + " clients logged in.");
-            }else
-                System.out.println((loggedIn.size())+" clients logged in");
+            }
         }
     }
     /**
@@ -62,17 +60,9 @@ public class MultiClientServer {
      * @param user
      */
     public static void broadcast(String user, DataTransfer object) throws IOException {
-        System.out.println("int the broadcast method");
         for ( ClientHandler c : loggedIn )
             if ( ! c.client.getUsername().equals(user) ) {
                 c.sendObject(user, object);
             }
     }
-
-
-
-
-
-
-
 }

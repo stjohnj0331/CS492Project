@@ -1,6 +1,5 @@
 package Server;
 
-import Authentication.MutAuthData;
 import Clients.DataTransfer;
 
 import java.io.*;
@@ -19,7 +18,6 @@ class ClientHandler extends Thread {
     private Socket clientSocket;
     DataTransfer dataObject;
     Client client;
-    MutAuthData myObject;
     MultiClientServer server = new MultiClientServer();
     boolean loginAttempt;
 
@@ -47,11 +45,9 @@ class ClientHandler extends Thread {
                 dataObject = new DataTransfer();
                 dataObject = (DataTransfer) ois.readObject();
                 if (dataObject.getState() == 1) {//login()
-                    System.out.println("login packet");
                     loginAttempt = login(dataObject);
                 }
                 if (loginAttempt) {//verifying to the server, hashed username and password
-                    System.out.println("Login successful");
                     //to the server terminal
                     System.out.println(client.getIpAddress() + " logged in @ " + time);
                     //to the logs
@@ -60,21 +56,17 @@ class ClientHandler extends Thread {
                     //-----------------messaging/data transfer loop begins-------------------//
                     while (dataObject.getState() != 3) {
                         dataObject = (DataTransfer) ois.readObject();
-                        System.out.println(dataObject.toString());//good to hear
                         //get in object check its state
                         if (dataObject.getState() == 2) {//mutAuth/PFS - needs to be broadcast
-                            System.out.println("this is mutAuth/PFS");
                             MultiClientServer.broadcast(dataObject.getUsername(), dataObject);
                         }
                         if (dataObject.getState() == 4) {//message - needs to be broadcast
-                            System.out.println("broadcasting message");
                             MultiClientServer.broadcast(dataObject.getUsername(), dataObject);
                         }
                     }
                     //-----------------messaging/data transfer loop ends--------------------//
 
                     if (dataObject.getState() == 3) {//logout
-                        System.out.println("logging out");
                         for (int i = 0; i < 2; i++)
                             if ((!MultiClientServer.loggedIn.isEmpty()) && i < MultiClientServer.getClientCount() &&
                                     MultiClientServer.loggedIn.get(i).client.getUsername().equals(client.getUsername())) {
@@ -83,7 +75,6 @@ class ClientHandler extends Thread {
                                 logs.write("\n" + client.getIpAddress() + " logged out @ " + time);
                                 logs.flush();
                             }
-                        System.out.println("closing socket");
                         ois.close();
                         oos.close();
                         clientSocket.close();
@@ -102,7 +93,9 @@ class ClientHandler extends Thread {
         }
     }
 
-    public void sendObject(String user, DataTransfer object) throws IOException {oos.writeObject(object);}
+    public void sendObject(String user, DataTransfer object) throws IOException {
+        oos.writeObject(object);
+    }
 
     public boolean login(DataTransfer dataObject)throws Exception{
         client.setUsername(dataObject.getUsername());//sets username for client

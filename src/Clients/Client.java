@@ -24,46 +24,41 @@ public class Client extends JFrame implements ActionListener {
     static MutAuthData mydataObject;
     static DataTransfer dataObject = new DataTransfer();
     static DataTransfer theirDataObject = new DataTransfer();
-    static int wait = 0;
 
-    public Client(String uname, String password, String serverName) throws Exception {
+    public Client(String uname,String password, String serverName) throws Exception {
         super(uname);
-        this.uname = uname;
         client = new Socket(serverName, 3000);
         oos = new ObjectOutputStream(client.getOutputStream());
         ois = new ObjectInputStream(client.getInputStream());
 
+        //send our first data packet - login data
         oos.writeObject(dataObject);
         oos.reset();
-        //get authentication data
 
+        //start the auth data and message data thread
+        new MessagesThread().start();
 
-        //-----------------Symmetric key creation and distribution----------------------//
-        //-----------------generating public mutual authentication info-----------------//
-        //mydataObject = dh.DHPubKeyGenerator(mydataObject.getDhPublicKey())DataObject.getDhPublicKey());
-        //mydataObject.setTheirNonce(theirDataObject.getTheirNonce() + 1);
-        //-----------------receiving public mutual authentication info -----------------///
-        //-----------------sending public mutual authentication info -------------------///
-        //if ((mydataObject.getMyNonce() + 1) == theirDataObject.getMyNonce()) {
-        //-----------------generating private mutual authentication info----------------//
-        //mydataObject.setDhPrivateKey(dh.buildKey(mydataObject.getKeyAgree(), mydataObject.getDhPublicKey()));
-        //----------------------------------Authenticate--------------------------------//
+        //ALice starts the mutual authentication handshake with initial information
+        mydataObject = dh.DHPubKeyGenerator();//public key
+        dataObject.setDhPubKey(mydataObject.getDhPublicKey());
+        dataObject.setNonce(mydataObject.getMyNonce());
+        dataObject.setUsername(uname);
+        dataObject.setState(2);
+        //send it
+        System.out.println("sending first dh exchange");
+        oos.writeObject(dataObject);
+        oos.reset();
 
-        //-----------------if authenticated, build out messenger interface -------------//
-
-        //}
-
-        //at this point only messages should be going across the sockets
-        new MessagesThread().start();//needs to be encrypted
         buildInterface();
-
     }
+
     public static void main(String ... args) throws Exception {
         mydataObject = dh.DHPubKeyGenerator();
-        dataObject = new DataTransfer(uname, dh.CryptoSecureRand(), mydataObject.getDhPublicKey(), 1);
+        dataObject = new DataTransfer(1);
         //take username from user
         dataObject.setUsername(JOptionPane.showInputDialog(null,"Enter your username :", "Login",
                 JOptionPane.PLAIN_MESSAGE));
+        uname = dataObject.getUsername();
         //take password from user
         dataObject.setPassword(JOptionPane.showInputDialog(null,"Enter your password :", "Password",
                 JOptionPane.PLAIN_MESSAGE));
@@ -154,13 +149,67 @@ public class Client extends JFrame implements ActionListener {
     // sends received messages to the chatbox
     class MessagesThread extends Thread {
         public void run() {
-            String line;
+            int count = 0;
             try {
                 while(true) {
                     theirDataObject = (DataTransfer) ois.readObject();
-                    taMessages.append(theirDataObject.getMessage()+ "\n");
+                    if(theirDataObject.getState() == 4) {
+                        taMessages.append(theirDataObject.getUsername()+":"
+                                +theirDataObject.getMessage() + "\n");
+                    }else if(theirDataObject.getState() == 2){
+                        mutualAuth(theirDataObject);
+                    }
                 } // end of while
             } catch(Exception ex) {ex.getMessage();}
         }
     }
+
+    public void mutualAuth(DataTransfer theirDataObject) throws Exception {
+        //receives bob's reply
+        long newNonce = mydataObject.getMyNonce()+1;
+        System.out.println("checking nonce");
+        System.out.println(newNonce +"\n"+theirDataObject.getTheirNonce());
+        if(newNonce == theirDataObject.getTheirNonce()){
+            System.out.println("Alice has verified bob");
+            //generate private key
+            mydataObject.setDhPrivateKey(dh.DHPrivKey(mydataObject.getKeyAgree(), mydataObject.getDhPublicKey()));
+        }
+        dataObject.setTheirNonce(theirDataObject.getNonce()+1);
+        //alice sends bob's nonce back
+        oos.writeObject(dataObject);
+        oos.reset();
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

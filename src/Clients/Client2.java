@@ -3,6 +3,7 @@ package Clients;
 import Authentication.DiffieHellman;
 import Authentication.MutAuthData;
 import Encryption.AES2;
+import Utilities.HMAC;
 
 import javax.swing.*;
 import java.awt.*;
@@ -14,6 +15,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.Base64;
 
 public class Client2 extends JFrame implements ActionListener {
     private static String uname;
@@ -129,18 +131,9 @@ public class Client2 extends JFrame implements ActionListener {
         pack();
     }
     public void sendMessage() throws Exception {
-
-
-
-
-
-
         dataObject.setState(4);
         String line = tfInput.getText();
-        dataObject.setEncryptedPayload(aes.encrypt( line, "1234"));// sends message to clientHandler by printing to outputStream
-
-
-
+        dataObject.setEncryptedPayload(aes.encrypt( line, dataObject.getSessionKey()));// sends message to clientHandler by printing to outputStream
 
         try {
             oos.writeObject(dataObject);
@@ -159,9 +152,9 @@ public class Client2 extends JFrame implements ActionListener {
             try {
                 while(true) {
                     theirDataObject = (DataTransfer) ois.readObject();
-                    if(theirDataObject.getState() == 4) {
+                    if(theirDataObject.getState() == 4 && verify(theirDataObject)) {
 
-                        String plaintext = aes.decrypt(theirDataObject.getEncryptedPayload(), "1234");
+                        String plaintext = aes.decrypt(theirDataObject.getEncryptedPayload(), dataObject.getSessionKey());
                         taMessages.append(theirDataObject.getUsername()+":"
                                 + plaintext + "\n");
 
@@ -178,6 +171,7 @@ public class Client2 extends JFrame implements ActionListener {
             } catch(Exception ex) {ex.getMessage();}
         }
     }
+
     //bob
     public void mutualAuth(DataTransfer theirDataObject) throws Exception {
         //receives alice's message
@@ -192,23 +186,38 @@ public class Client2 extends JFrame implements ActionListener {
         dataObject.setNonce(mydataObject.getMyNonce());//bobs nonce
         dataObject.setUsername(uname);//bob
         dataObject.setTheirNonce(theirDataObject.getNonce()+1);//alice's incremented nonce
+
+
+        String sessionKey = Base64.getEncoder().encodeToString(mydataObject.getDhPrivateKey());
+        sessionKey += (mydataObject.getMyNonce()+1) + (theirDataObject.getNonce()+1) +
+                theirDataObject.getUsername()+uname;
+        String hashKey = "0123456789";
+        byte[] hashSessionKey = HMAC.hmac2561(sessionKey, hashKey);
+        dataObject.setSessionKey(createEncryptionKey(hashSessionKey));
+
         dataObject.setState(2);
         oos.writeObject(dataObject);
         oos.reset();
     }
 
-    public void verify(DataTransfer theirDataObject){
+    public boolean verify(DataTransfer theirDataObject){
         long newNonce = mydataObject.getMyNonce()+1;
-        System.out.println(newNonce +"\n"+theirDataObject.getTheirNonce());
         if(newNonce == theirDataObject.getTheirNonce()){
-            System.out.println("Bob has verified Alice");
-
+            if(dataObject.getSessionKey().equals(theirDataObject.getSessionKey()))
+                return true;
         }
+        return false;
+    }
+
+    public String createEncryptionKey(byte[] sessionKey){
+        byte[] temp = new byte[sessionKey.length/2];
+        for(int i = sessionKey.length/2 ; i < sessionKey.length/2 ;i++){
+            temp[i] = sessionKey[i];
+        }
+        String key = new String(temp);
+        return key;
     }
 }
-
-
-
 
 
 

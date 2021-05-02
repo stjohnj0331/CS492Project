@@ -3,6 +3,7 @@ package Clients;
 import Authentication.DiffieHellman;
 import Authentication.MutAuthData;
 import Encryption.AES2;
+import Utilities.HMAC;
 
 import javax.swing.*;
 import java.awt.*;
@@ -26,6 +27,7 @@ public class Client extends JFrame implements ActionListener {
     Socket client;
     String sessionKey;
     static DiffieHellman dh = new DiffieHellman();
+    HMAC hmac = new HMAC();
     AES2 aes = new AES2();
     static MutAuthData mydataObject = new MutAuthData();
     static DataTransfer dataObject = new DataTransfer();
@@ -152,7 +154,7 @@ public class Client extends JFrame implements ActionListener {
         //Encrypting---------------------
         dataObject.setState(4);
         String line = tfInput.getText();
-        dataObject.setEncryptedPayload(aes.encrypt(line,  "1234"));// sends message to clientHandler by printing to outputStream
+        dataObject.setEncryptedPayload(aes.encrypt(line,  dataObject.getSessionKey()));// sends message to clientHandler by printing to outputStream
         //dataObject.setMessage(tfInput.getText());// prints
         //encrypting------------------------
 
@@ -173,11 +175,11 @@ public class Client extends JFrame implements ActionListener {
             try {
                 while(true) {
                     theirDataObject = (DataTransfer) ois.readObject();
-                    if(theirDataObject.getState() == 4) {
+                    if(theirDataObject.getState() == 4 && verify(theirDataObject)) {
 
 
                         //decrypting---------------------------------------
-                        String plaintext = aes.decrypt(theirDataObject.getEncryptedPayload(), "1234");
+                        String plaintext = aes.decrypt(theirDataObject.getEncryptedPayload(), dataObject.getSessionKey());
                         taMessages.append(theirDataObject.getUsername()+":"
                                 + plaintext + "\n");
 
@@ -197,58 +199,44 @@ public class Client extends JFrame implements ActionListener {
     public void mutualAuth(DataTransfer theirDataObject) throws Exception {
         //receives bob's reply
         long newNonce = mydataObject.getMyNonce()+1;
-        System.out.println("checking nonce");
         System.out.println(newNonce +"\n"+theirDataObject.getTheirNonce());
         if(newNonce == theirDataObject.getTheirNonce()){
-            System.out.println("Alice has verified bob");
             //generate private key
             mydataObject.setDhPrivateKey(dh.DHPrivKey(mydataObject.getKeyAgree(), theirDataObject.getDhPubKey()));
 
 
             String sessionKey = Base64.getEncoder().encodeToString(mydataObject.getDhPrivateKey());
             sessionKey += (mydataObject.getMyNonce()+1) + (theirDataObject.getNonce()+1) +
-                    uname + theirDataObject.getUsername();
-
+                    uname+theirDataObject.getUsername();
+            String hashKey = "0123456789";
+            byte[] hashSessionKey = HMAC.hmac2561(sessionKey, hashKey);
+            dataObject.setTheirNonce(theirDataObject.getNonce()+1);
+            dataObject.setSessionKey(createEncryptionKey(hashSessionKey));
         }
-        dataObject.setTheirNonce(theirDataObject.getNonce()+1);
         //alice sends bob's nonce back
 
         oos.writeObject(dataObject);
         oos.reset();
     }
 
-    private static void byte2hex(byte b, StringBuffer buf) {
-        char[] hexChars = { '0', '1', '2', '3', '4', '5', '6', '7', '8',
-                '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-        int high = ((b & 0xf0) >> 4);
-        int low = (b & 0x0f);
-        buf.append(hexChars[high]);
-        buf.append(hexChars[low]);
+    public boolean verify(DataTransfer theirDataObject){
+        long newNonce = mydataObject.getMyNonce()+1;
+        if(newNonce == theirDataObject.getTheirNonce()){
+            if(dataObject.getSessionKey().equals(theirDataObject.getSessionKey()))
+                return true;
+        }
+        return false;
     }
 
-    /*
-     * Converts a byte array to hex string
-     */
-    private static String toHexString(byte[] block) {
-        StringBuffer buf = new StringBuffer();
-        int len = block.length;
-        for (int i = 0; i < len; i++) {
-            byte2hex(block[i], buf);
-            if (i < len-1) {
-                buf.append(":");
-            }
+    public String createEncryptionKey(byte[] sessionKey){
+        byte[] temp = new byte[sessionKey.length/2];
+        for(int i = sessionKey.length/2 ; i < sessionKey.length/2 ;i++){
+            temp[i] = sessionKey[i];
         }
-        return buf.toString();
+        String key = new String(temp);
+        return key;
     }
 }
-
-
-
-
-
-
-
-
 
 
 

@@ -1,5 +1,6 @@
 package Clients;
 
+
 import Authentication.DiffieHellman;
 import Authentication.MutAuthData;
 import Encryption.AES2;
@@ -31,7 +32,7 @@ public class Client extends JFrame implements ActionListener {
     static DataTransfer dataObject = new DataTransfer();
     static DataTransfer theirDataObject = new DataTransfer();
 
-    public Client(String uname,String password, String serverName) throws Exception {
+    public Client(String uname, String password, String serverName) throws Exception {
         super(uname);
         this.uname = uname;
         client = new Socket(serverName, 3000);
@@ -44,18 +45,6 @@ public class Client extends JFrame implements ActionListener {
 
         //start the auth data and message data thread
         new MessagesThread().start();
-
-
-        //ALice starts the mutual authentication handshake with initial information
-        mydataObject = dh.DHAlicePubKeyGenerator();//public key
-        dataObject.setDhPubKey(mydataObject.getDhPublicKey());
-        dataObject.setNonce(mydataObject.getMyNonce());
-        dataObject.setUsername(uname);
-        dataObject.setState(2);
-        //send it
-        oos.writeObject(dataObject);
-        oos.reset();
-
         buildInterface();
     }
 
@@ -72,7 +61,6 @@ public class Client extends JFrame implements ActionListener {
         //create new client
         try {
             new Client(dataObject.getUsername(), dataObject.getPassword(), serverName);
-
         } catch(Exception ex) {
             ex.printStackTrace();
             System.out.println( "Error in main of client--> " + ex.getMessage());
@@ -86,12 +74,12 @@ public class Client extends JFrame implements ActionListener {
 
             try {/*----------------------clear all data from user--------------*/
                 System.out.println("logging out");
+                //System.out.println(dataObject.toString());
                 oos.writeObject(dataObject);
                 oos.reset();
-                mydataObject.deleteData();
-                dataObject.reset();
                 System.exit(0);
                 /*----------------------clear all data from user--------------*/
+
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -103,7 +91,6 @@ public class Client extends JFrame implements ActionListener {
             }
         }
     }
-
     public void buildInterface() {
         btnSend = new JButton("Send");
         btnExit = new JButton("Exit");
@@ -144,15 +131,10 @@ public class Client extends JFrame implements ActionListener {
         setVisible(true);
         pack();
     }
-
     public void sendMessage() throws Exception {
-
-        //Encrypting---------------------
         dataObject.setState(4);
         String line = tfInput.getText();
-        dataObject.setEncryptedPayload(aes.encrypt(line,  dataObject.getSessionKey()));// sends message to clientHandler by printing to outputStream
-        //dataObject.setMessage(tfInput.getText());// prints
-        //encrypting------------------------
+        dataObject.setEncryptedPayload(aes.encrypt( line, dataObject.getSessionKey()));// sends message to clientHandler by printing to outputStream
 
         try {
             oos.writeObject(dataObject);
@@ -164,7 +146,7 @@ public class Client extends JFrame implements ActionListener {
         tfInput.setText("");
     }
 
-    // sends received messages to the chat box
+    // sends received messages to the chatbox
     class MessagesThread extends Thread {
         public void run() {
             int count = 0;
@@ -173,40 +155,48 @@ public class Client extends JFrame implements ActionListener {
                     theirDataObject = (DataTransfer) ois.readObject();
                     if(theirDataObject.getState() == 4 && verify(theirDataObject)) {
 
-
-                        //decrypting---------------------------------------
                         String plaintext = aes.decrypt(theirDataObject.getEncryptedPayload(), dataObject.getSessionKey());
                         taMessages.append(theirDataObject.getUsername()+":"
                                 + plaintext + "\n");
-                        //decrypting---------------------------------------
-
 
                     }else if(theirDataObject.getState() == 2){
-                        mutualAuth(theirDataObject);
+                        if(count == 1){
+                            verify(theirDataObject);
+                            count++;
+                        }if(count == 0) {
+                            mutualAuth(theirDataObject);
+                            count++;
+                        }
                     }
                 } // end of while
             } catch(Exception ex) {ex.getMessage();}
         }
     }
 
+    //bob
     public void mutualAuth(DataTransfer theirDataObject) throws Exception {
-        //receives bob's reply
-        long newNonce = mydataObject.getMyNonce()+1;
-        System.out.println(newNonce +"\n"+theirDataObject.getTheirNonce());
-        if(newNonce == theirDataObject.getTheirNonce()){
-            //generate private key
-            mydataObject.setDhPrivateKey(dh.DHPrivKey(mydataObject.getKeyAgree(), theirDataObject.getDhPubKey()));
+        //receives alice's message
+        //generate bob's public key from alice's
+        mydataObject = dh.DHBobPubKeyGenerator(theirDataObject.getDhPubKey());
+
+        //generate private key
+        mydataObject.setDhPrivateKey(dh.DHPrivKey(mydataObject.getKeyAgree(), theirDataObject.getDhPubKey()));
 
 
-            String sessionKey = Base64.getEncoder().encodeToString(mydataObject.getDhPrivateKey());
-            sessionKey += (mydataObject.getMyNonce()+1) + (theirDataObject.getNonce()+1) +
-                    uname+theirDataObject.getUsername();
-            String hashKey = "0123456789";//not at all an okay way to "get" a key for hashing
-            byte[] hashSessionKey = HMAC.hmac2561(sessionKey, hashKey);
-            dataObject.setTheirNonce(theirDataObject.getNonce()+1);
-            dataObject.setSessionKey(createEncryptionKey(hashSessionKey));
-        }
-        //alice sends bob's nonce back
+        dataObject.setDhPubKey(mydataObject.getDhPublicKey());//bobs public key
+        dataObject.setNonce(mydataObject.getMyNonce());//bobs nonce
+        dataObject.setUsername(uname);//bob
+        dataObject.setTheirNonce(theirDataObject.getNonce()+1);//alice's incremented nonce
+
+
+        String sessionKey = Base64.getEncoder().encodeToString(mydataObject.getDhPrivateKey());
+        sessionKey += (mydataObject.getMyNonce()+1) + (theirDataObject.getNonce()+1) +
+                theirDataObject.getUsername()+uname;
+        String hashKey = "0123456789";
+        byte[] hashSessionKey = HMAC.hmac2561(sessionKey, hashKey);
+        dataObject.setSessionKey(createEncryptionKey(hashSessionKey));
+
+        dataObject.setState(2);
         oos.writeObject(dataObject);
         oos.reset();
     }

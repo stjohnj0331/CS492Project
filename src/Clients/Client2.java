@@ -21,9 +21,9 @@ public class Client2 extends JFrame implements ActionListener {
     private static String uname;
     ObjectOutputStream oos;
     ObjectInputStream ois;
-    JTextArea  taMessages;
+    JTextArea taMessages;
     JTextField tfInput;
-    JButton btnSend,btnExit;
+    JButton btnSend, btnExit;
     Socket client;
     static DiffieHellman dh = new DiffieHellman();
     AES2 aes = new AES2();
@@ -44,45 +44,59 @@ public class Client2 extends JFrame implements ActionListener {
 
         //start the auth data and message data thread
         new MessagesThread().start();
+
+
+        //ALice starts the mutual authentication handshake with initial information
+        mydataObject = dh.DHAlicePubKeyGenerator();//public key
+        dataObject.setDhPubKey(mydataObject.getDhPublicKey());
+        dataObject.setNonce(mydataObject.getMyNonce());
+        dataObject.setUsername(uname);
+        dataObject.setState(2);
+        //send it
+        oos.writeObject(dataObject);
+        oos.reset();
+
         buildInterface();
     }
 
-    public static void main(String ... args) throws Exception {
+    public static void main(String... args) throws Exception {
         dataObject = new DataTransfer(1);
         //take username from user
-        dataObject.setUsername(JOptionPane.showInputDialog(null,"Enter your username :", "Login",
+        dataObject.setUsername(JOptionPane.showInputDialog(null, "Enter your username :", "Login",
                 JOptionPane.PLAIN_MESSAGE));
         uname = dataObject.getUsername();
         //take password from user
-        dataObject.setPassword(JOptionPane.showInputDialog(null,"Enter your password :", "Password",
+        dataObject.setPassword(JOptionPane.showInputDialog(null, "Enter your password :", "Password",
                 JOptionPane.PLAIN_MESSAGE));
         String serverName = "192.168.1.10";
         //create new client
         try {
             new Client2(dataObject.getUsername(), dataObject.getPassword(), serverName);
-        } catch(Exception ex) {
+
+        } catch (Exception ex) {
             ex.printStackTrace();
-            System.out.println( "Error in main of client--> " + ex.getMessage());
+            System.out.println("Error in main of client--> " + ex.getMessage());
             System.exit(1);
         }
     }
 
     public void actionPerformed(ActionEvent evt) {
-        if ( evt.getSource() == btnExit ) {
+        if (evt.getSource() == btnExit) {
             dataObject.setState(3);  // send end to server so that server knows to terminate connection
 
             try {/*----------------------clear all data from user--------------*/
                 System.out.println("logging out");
-                //System.out.println(dataObject.toString());
                 oos.writeObject(dataObject);
                 oos.reset();
+                mydataObject.deleteData();
+                dataObject.reset();
                 System.exit(0);
                 /*----------------------clear all data from user--------------*/
-
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        } if(evt.getSource() == btnSend) {
+        }
+        if (evt.getSource() == btnSend) {
             try {
                 sendMessage();
             } catch (Exception e) {
@@ -90,6 +104,7 @@ public class Client2 extends JFrame implements ActionListener {
             }
         }
     }
+
     public void buildInterface() {
         btnSend = new JButton("Send");
         btnExit = new JButton("Exit");
@@ -97,11 +112,11 @@ public class Client2 extends JFrame implements ActionListener {
         taMessages.setRows(10);
         taMessages.setColumns(50);
         taMessages.setEditable(false);
-        tfInput  = new JTextField(50);
+        tfInput = new JTextField(50);
         tfInput.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-                if(e.getKeyCode() == KeyEvent.VK_ENTER) {
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
                     try {
                         sendMessage();
                     } catch (Exception exception) {
@@ -112,12 +127,12 @@ public class Client2 extends JFrame implements ActionListener {
         });
         JScrollPane sp = new JScrollPane(taMessages, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
                 JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        add(sp,"Center");
-        JPanel bp = new JPanel( new FlowLayout());
+        add(sp, "Center");
+        JPanel bp = new JPanel(new FlowLayout());
         bp.add(tfInput);
         bp.add(btnSend);
         bp.add(btnExit);
-        add(bp,"South");
+        add(bp, "South");
         btnSend.addActionListener(this);
         btnExit.addActionListener(this);
         setLocationRelativeTo(null);
@@ -126,14 +141,19 @@ public class Client2 extends JFrame implements ActionListener {
            disposal of the DH key and hashed session key.
          */
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-        setSize(500,300);
+        setSize(500, 300);
         setVisible(true);
         pack();
     }
+
     public void sendMessage() throws Exception {
+
+        //Encrypting---------------------
         dataObject.setState(4);
         String line = tfInput.getText();
-        dataObject.setEncryptedPayload(aes.encrypt( line, dataObject.getSessionKey()));// sends message to clientHandler by printing to outputStream
+        dataObject.setEncryptedPayload(aes.encrypt(line, dataObject.getSessionKey()));// sends message to clientHandler by printing to outputStream
+        //dataObject.setMessage(tfInput.getText());// prints
+        //encrypting------------------------
 
         try {
             oos.writeObject(dataObject);
@@ -141,77 +161,71 @@ public class Client2 extends JFrame implements ActionListener {
         } catch (IOException ex) {
             ex.printStackTrace();
         }
-        taMessages.append(uname+": "+line+"\n");
+        taMessages.append(uname + ": " + line + "\n");
         tfInput.setText("");
     }
 
-    // sends received messages to the chatbox
+    // sends received messages to the chat box
     class MessagesThread extends Thread {
         public void run() {
             int count = 0;
             try {
-                while(true) {
+                while (true) {
                     theirDataObject = (DataTransfer) ois.readObject();
-                    if(theirDataObject.getState() == 4 && verify(theirDataObject)) {
+                    if (theirDataObject.getState() == 4 && verify(theirDataObject)) {
 
+
+                        //decrypting---------------------------------------
                         String plaintext = aes.decrypt(theirDataObject.getEncryptedPayload(), dataObject.getSessionKey());
-                        taMessages.append(theirDataObject.getUsername()+":"
+                        taMessages.append(theirDataObject.getUsername() + ":"
                                 + plaintext + "\n");
+                        //decrypting---------------------------------------
 
-                    }else if(theirDataObject.getState() == 2){
-                        if(count == 1){
-                            verify(theirDataObject);
-                            count++;
-                        }if(count == 0) {
-                            mutualAuth(theirDataObject);
-                            count++;
-                        }
+
+                    } else if (theirDataObject.getState() == 2) {
+                        mutualAuth(theirDataObject);
                     }
                 } // end of while
-            } catch(Exception ex) {ex.getMessage();}
+            } catch (Exception ex) {
+                ex.getMessage();
+            }
         }
     }
 
-    //bob
     public void mutualAuth(DataTransfer theirDataObject) throws Exception {
-        //receives alice's message
-        //generate bob's public key from alice's
-        mydataObject = dh.DHBobPubKeyGenerator(theirDataObject.getDhPubKey());
-
-        //generate private key
-        mydataObject.setDhPrivateKey(dh.DHPrivKey(mydataObject.getKeyAgree(), theirDataObject.getDhPubKey()));
-
-
-        dataObject.setDhPubKey(mydataObject.getDhPublicKey());//bobs public key
-        dataObject.setNonce(mydataObject.getMyNonce());//bobs nonce
-        dataObject.setUsername(uname);//bob
-        dataObject.setTheirNonce(theirDataObject.getNonce()+1);//alice's incremented nonce
+        //receives bob's reply
+        long newNonce = mydataObject.getMyNonce() + 1;
+        System.out.println(newNonce + "\n" + theirDataObject.getTheirNonce());
+        if (newNonce == theirDataObject.getTheirNonce()) {
+            //generate private key
+            mydataObject.setDhPrivateKey(dh.DHPrivKey(mydataObject.getKeyAgree(), theirDataObject.getDhPubKey()));
 
 
-        String sessionKey = Base64.getEncoder().encodeToString(mydataObject.getDhPrivateKey());
-        sessionKey += (mydataObject.getMyNonce()+1) + (theirDataObject.getNonce()+1) +
-                theirDataObject.getUsername()+uname;
-        String hashKey = "0123456789";
-        byte[] hashSessionKey = HMAC.hmac2561(sessionKey, hashKey);
-        dataObject.setSessionKey(createEncryptionKey(hashSessionKey));
-
-        dataObject.setState(2);
+            String sessionKey = Base64.getEncoder().encodeToString(mydataObject.getDhPrivateKey());
+            sessionKey += (mydataObject.getMyNonce() + 1) + (theirDataObject.getNonce() + 1) +
+                    uname + theirDataObject.getUsername();
+            String hashKey = "0123456789";//not at all an okay way to "get" a key for hashing
+            byte[] hashSessionKey = HMAC.hmac2561(sessionKey, hashKey);
+            dataObject.setTheirNonce(theirDataObject.getNonce() + 1);
+            dataObject.setSessionKey(createEncryptionKey(hashSessionKey));
+        }
+        //alice sends bob's nonce back
         oos.writeObject(dataObject);
         oos.reset();
     }
 
-    public boolean verify(DataTransfer theirDataObject){
-        long newNonce = mydataObject.getMyNonce()+1;
-        if(newNonce == theirDataObject.getTheirNonce()){
-            if(dataObject.getSessionKey().equals(theirDataObject.getSessionKey()))
+    public boolean verify(DataTransfer theirDataObject) {
+        long newNonce = mydataObject.getMyNonce() + 1;
+        if (newNonce == theirDataObject.getTheirNonce()) {
+            if (dataObject.getSessionKey().equals(theirDataObject.getSessionKey()))
                 return true;
         }
         return false;
     }
 
-    public String createEncryptionKey(byte[] sessionKey){
-        byte[] temp = new byte[sessionKey.length/2];
-        for(int i = sessionKey.length/2 ; i < sessionKey.length/2 ;i++){
+    public String createEncryptionKey(byte[] sessionKey) {
+        byte[] temp = new byte[sessionKey.length / 2];
+        for (int i = sessionKey.length / 2; i < sessionKey.length / 2; i++) {
             temp[i] = sessionKey[i];
         }
         String key = new String(temp);

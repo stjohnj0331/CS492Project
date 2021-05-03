@@ -1,0 +1,18 @@
+
+out/*
+
+.idea/*
+
+.vs/*
+
+src/Server/logs.txt
+
+src/Server/login.txt
+
+/.vs/
+
+src/Security Project.iml
+
+Security Project.iml
+
+*.DS_Store

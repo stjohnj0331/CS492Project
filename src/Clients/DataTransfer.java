@@ -10,10 +10,19 @@ public class DataTransfer implements Serializable {
     String sessionKey;
     Long nonce;
     Long theirNonce;
+    String key;
     byte[] dhPubKey;
     byte[] dhPrivKey;
     String message;
     String password;
+
+    public String getKey() {
+        return key;
+    }
+
+    public void setKey(String key) {
+        this.key = key;
+    }
 
     public String getSessionKey() {
         return sessionKey;

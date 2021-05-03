@@ -25,9 +25,7 @@ public class Client extends JFrame implements ActionListener {
     JTextField tfInput;
     JButton btnSend,btnExit;
     Socket client;
-    String sessionKey;
     static DiffieHellman dh = new DiffieHellman();
-    HMAC hmac = new HMAC();
     AES2 aes = new AES2();
     static MutAuthData mydataObject = new MutAuthData();
     static DataTransfer dataObject = new DataTransfer();
@@ -47,9 +45,6 @@ public class Client extends JFrame implements ActionListener {
         //start the auth data and message data thread
         new MessagesThread().start();
 
-        //start encryption here
-
-
 
         //ALice starts the mutual authentication handshake with initial information
         mydataObject = dh.DHAlicePubKeyGenerator();//public key
@@ -58,7 +53,6 @@ public class Client extends JFrame implements ActionListener {
         dataObject.setUsername(uname);
         dataObject.setState(2);
         //send it
-        System.out.println("sending first dh exchange");
         oos.writeObject(dataObject);
         oos.reset();
 
@@ -89,13 +83,15 @@ public class Client extends JFrame implements ActionListener {
     public void actionPerformed(ActionEvent evt) {
         if ( evt.getSource() == btnExit ) {
             dataObject.setState(3);  // send end to server so that server knows to terminate connection
-            try {
+
+            try {/*----------------------clear all data from user--------------*/
                 System.out.println("logging out");
                 oos.writeObject(dataObject);
                 oos.reset();
                 mydataObject.deleteData();
                 dataObject.reset();
                 System.exit(0);
+                /*----------------------clear all data from user--------------*/
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -182,9 +178,6 @@ public class Client extends JFrame implements ActionListener {
                         String plaintext = aes.decrypt(theirDataObject.getEncryptedPayload(), dataObject.getSessionKey());
                         taMessages.append(theirDataObject.getUsername()+":"
                                 + plaintext + "\n");
-
-                        //taMessages.append(theirDataObject.getUsername()+":"
-                        //+theirDataObject.getMessage() + "\n");
                         //decrypting---------------------------------------
 
 
@@ -208,13 +201,12 @@ public class Client extends JFrame implements ActionListener {
             String sessionKey = Base64.getEncoder().encodeToString(mydataObject.getDhPrivateKey());
             sessionKey += (mydataObject.getMyNonce()+1) + (theirDataObject.getNonce()+1) +
                     uname+theirDataObject.getUsername();
-            String hashKey = "0123456789";
+            String hashKey = "0123456789";//not at all an okay way to "get" a key for hashing
             byte[] hashSessionKey = HMAC.hmac2561(sessionKey, hashKey);
             dataObject.setTheirNonce(theirDataObject.getNonce()+1);
             dataObject.setSessionKey(createEncryptionKey(hashSessionKey));
         }
         //alice sends bob's nonce back
-
         oos.writeObject(dataObject);
         oos.reset();
     }
@@ -237,28 +229,3 @@ public class Client extends JFrame implements ActionListener {
         return key;
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

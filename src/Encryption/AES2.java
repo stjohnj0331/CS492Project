@@ -31,36 +31,30 @@ public class AES2 {
         }
     }
 
-    public static String encrypt(String strToEncrypt, String secret)
-    {
-        try
-        {
+    public static String encrypt(String strToEncrypt, String secret) {
+        try {
             setKey(secret);
             Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
             cipher.init(Cipher.ENCRYPT_MODE, secretKey);
             return Base64.getEncoder().encodeToString(cipher.doFinal(strToEncrypt.getBytes("UTF-8")));
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
+            e.printStackTrace();
             System.out.println("Error while encrypting: " + e.toString());
         }
         return null;
     }
 
-    public static String decrypt(String strToDecrypt, String secret)
-    {
-        try
-        {
+    public static String decrypt(String strToDecrypt, String secret) {
+        try {
             setKey(secret);
             Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5PADDING");
             cipher.init(Cipher.DECRYPT_MODE, secretKey);
             return new String(cipher.doFinal(Base64.getDecoder().decode(strToDecrypt)));
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
+            e.printStackTrace();
             System.out.println("Error while decrypting: " + e.toString());
         }
         return null;
     }
-    }
+}
 

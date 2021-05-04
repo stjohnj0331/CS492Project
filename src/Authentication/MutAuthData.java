@@ -3,7 +3,7 @@ package Authentication;
 import javax.crypto.KeyAgreement;
 
 public class MutAuthData{
-
+    private String sessionKey;
     private String username;
     private Long myNonce;
     private byte[] dhPublicKey;
@@ -17,8 +17,14 @@ public class MutAuthData{
         myNonce = dh.CryptoSecureRand();
     }
 
-    public MutAuthData() {
+    public MutAuthData() { }
 
+    public String getSessionKey() {
+        return sessionKey;
+    }
+
+    public void setSessionKey(String sessionKey) {
+        this.sessionKey = sessionKey;
     }
 
     public String getUsername() {

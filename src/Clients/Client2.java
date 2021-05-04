@@ -25,6 +25,7 @@ public class Client2 extends JFrame implements ActionListener {
     JTextField tfInput;
     JButton btnSend, btnExit;
     Socket client;
+    String key;
     static DiffieHellman dh = new DiffieHellman();
     AES2 aes = new AES2();
     static MutAuthData mydataObject = new MutAuthData();
@@ -151,6 +152,8 @@ public class Client2 extends JFrame implements ActionListener {
         //Encrypting---------------------
         dataObject.setState(4);
         String line = tfInput.getText();
+
+        //dataObject.setEncryptedPayload(aes.encrypt(line, mydataObject.getSessionKey()));// sends message to clientHandler by printing to outputStream
         dataObject.setEncryptedPayload(aes.encrypt(line, dataObject.getSessionKey()));// sends message to clientHandler by printing to outputStream
         //dataObject.setMessage(tfInput.getText());// prints
         //encrypting------------------------
@@ -176,6 +179,7 @@ public class Client2 extends JFrame implements ActionListener {
 
 
                         //decrypting---------------------------------------
+                        //String plaintext = aes.decrypt(theirDataObject.getEncryptedPayload(), mydataObject.getSessionKey());
                         String plaintext = aes.decrypt(theirDataObject.getEncryptedPayload(), dataObject.getSessionKey());
                         taMessages.append(theirDataObject.getUsername() + ":"
                                 + plaintext + "\n");
@@ -205,9 +209,19 @@ public class Client2 extends JFrame implements ActionListener {
             sessionKey += (mydataObject.getMyNonce() + 1) + (theirDataObject.getNonce() + 1) +
                     uname + theirDataObject.getUsername();
             String hashKey = "0123456789";//not at all an okay way to "get" a key for hashing
-            byte[] hashSessionKey = HMAC.hmac2561(sessionKey, hashKey);
             dataObject.setTheirNonce(theirDataObject.getNonce() + 1);
-            dataObject.setSessionKey(createEncryptionKey(hashSessionKey));
+            byte[] hashSessionKey = HMAC.hmac2561(sessionKey, hashKey);
+            String temp = createEncryptionKey(hashSessionKey);
+            //dataObject.setSessionKey(temp);
+
+            //hash
+
+
+            String hasSesKey =  aes.encrypt(temp, temp);
+            dataObject.setSessionKey(hasSesKey);
+            dataObject.setState(2);
+            dataObject.setTheirNonce(theirDataObject.getNonce() + 1);
+
         }
         //alice sends bob's nonce back
         oos.writeObject(dataObject);

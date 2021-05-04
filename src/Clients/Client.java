@@ -25,6 +25,7 @@ public class Client extends JFrame implements ActionListener {
     JTextArea  taMessages;
     JTextField tfInput;
     JButton btnSend,btnExit;
+    String key;
     Socket client;
     static DiffieHellman dh = new DiffieHellman();
     AES2 aes = new AES2();
@@ -134,8 +135,8 @@ public class Client extends JFrame implements ActionListener {
     public void sendMessage() throws Exception {
         dataObject.setState(4);
         String line = tfInput.getText();
-        dataObject.setEncryptedPayload(aes.encrypt( line, dataObject.getSessionKey()));// sends message to clientHandler by printing to outputStream
-
+        //dataObject.setEncryptedPayload(aes.encrypt(line, mydataObject.getSessionKey()));// sends message to clientHandler by printing to outputStream
+        dataObject.setEncryptedPayload(aes.encrypt(line, dataObject.getSessionKey()));// sends message to clientHandler by printing to outputStream
         try {
             oos.writeObject(dataObject);
             oos.reset();
@@ -155,6 +156,7 @@ public class Client extends JFrame implements ActionListener {
                     theirDataObject = (DataTransfer) ois.readObject();
                     if(theirDataObject.getState() == 4 && verify(theirDataObject)) {
 
+                        //String plaintext = aes.decrypt(theirDataObject.getEncryptedPayload(), mydataObject.getSessionKey());
                         String plaintext = aes.decrypt(theirDataObject.getEncryptedPayload(), dataObject.getSessionKey());
                         taMessages.append(theirDataObject.getUsername()+":"
                                 + plaintext + "\n");
@@ -189,13 +191,20 @@ public class Client extends JFrame implements ActionListener {
         dataObject.setTheirNonce(theirDataObject.getNonce()+1);//alice's incremented nonce
 
 
+
         String sessionKey = Base64.getEncoder().encodeToString(mydataObject.getDhPrivateKey());
         sessionKey += (mydataObject.getMyNonce()+1) + (theirDataObject.getNonce()+1) +
                 theirDataObject.getUsername()+uname;
         String hashKey = "0123456789";
         byte[] hashSessionKey = HMAC.hmac2561(sessionKey, hashKey);
-        dataObject.setSessionKey(createEncryptionKey(hashSessionKey));
+        String temp = createEncryptionKey(hashSessionKey);
+        //dataObject.setSessionKey(temp);
 
+        //hash
+
+
+        String hasSesKey =  aes.encrypt(temp, temp);
+        dataObject.setSessionKey(hasSesKey);
         dataObject.setState(2);
         oos.writeObject(dataObject);
         oos.reset();
@@ -209,6 +218,7 @@ public class Client extends JFrame implements ActionListener {
         }
         return false;
     }
+
 
     public String createEncryptionKey(byte[] sessionKey){
         byte[] temp = new byte[sessionKey.length/2];

@@ -195,7 +195,7 @@ public class Client extends JFrame implements ActionListener {
         String sessionKey = Base64.getEncoder().encodeToString(mydataObject.getDhPrivateKey());
         sessionKey += (mydataObject.getMyNonce()+1) + (theirDataObject.getNonce()+1) +
                 theirDataObject.getUsername()+uname;
-        String hashKey = "0123456789";
+        String hashKey = "1683249657";//not at all an okay way to "get" a key for hashing
         byte[] hashSessionKey = HMAC.hmac2561(sessionKey, hashKey);
         String temp = createEncryptionKey(hashSessionKey);
         //dataObject.setSessionKey(temp);
